@@ -1,0 +1,72 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../shared/widgets/main_scaffold.dart';
+import '../../features/home/home_screen.dart';
+import '../../features/events/events_screen.dart';
+import '../../features/communities/communities_screen.dart';
+import '../../features/city/city_screen.dart';
+import '../../features/profile/profile_screen.dart';
+import '../../features/auth/splash_screen.dart';
+import '../../features/auth/auth_screen.dart';
+import '../../features/auth/sign_in_screen.dart';
+import '../../features/auth/interest_selection_screen.dart';
+import '../../features/auth/user_details_screen.dart';
+
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
+
+final appRouter = GoRouter(
+  navigatorKey: _rootNavigatorKey,
+  initialLocation: '/splash',
+  routes: [
+    GoRoute(
+      path: '/splash',
+      builder: (context, state) => const SplashScreen(),
+    ),
+    GoRoute(
+      path: '/auth',
+      builder: (context, state) => const AuthScreen(),
+    ),
+    GoRoute(
+      path: '/sign-in',
+      builder: (context, state) => const SignInScreen(),
+    ),
+    GoRoute(
+      path: '/interests',
+      builder: (context, state) => const InterestSelectionScreen(),
+    ),
+    GoRoute(
+      path: '/user-details',
+      builder: (context, state) => const UserDetailsScreen(),
+    ),
+    ShellRoute(
+      navigatorKey: _shellNavigatorKey,
+      builder: (context, state, child) {
+        return MainScaffold(child: child);
+      },
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const HomeScreen(),
+        ),
+        GoRoute(
+          path: '/events',
+          builder: (context, state) => const EventsScreen(),
+        ),
+        GoRoute(
+          path: '/communities',
+          builder: (context, state) => const CommunitiesScreen(),
+        ),
+        GoRoute(
+          path: '/city',
+          builder: (context, state) => const CityScreen(),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) => const ProfileScreen(),
+        ),
+      ],
+    ),
+  ],
+);
