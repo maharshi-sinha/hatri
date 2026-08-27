@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/responsive/responsive.dart';
 
@@ -27,9 +28,20 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
     super.dispose();
   }
 
-  void _onNext() {
+  Future<void> _onNext() async {
     HapticFeedback.mediumImpact();
-    context.go('/');
+    // Skip permission screens if they're already granted (subsequent runs).
+    // New installs still see the screens because status starts as .notDetermined.
+    final notif = await Permission.notification.status;
+    final loc = await Permission.locationWhenInUse.status;
+    if (!mounted) return;
+    if (notif.isGranted && loc.isGranted) {
+      context.go('/celebration');
+    } else if (notif.isGranted) {
+      context.go('/location-permission');
+    } else {
+      context.go('/notification-permission');
+    }
   }
 
   @override

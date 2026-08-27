@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
@@ -229,7 +230,14 @@ class _StartPlanScreenState extends State<StartPlanScreen> {
               border: Border.all(color: AppColors.border),
               borderRadius: BorderRadius.circular(Corners.md),
             ),
-            child: Icon(Icons.arrow_back_rounded, color: AppColors.paper, size: 20.r),
+            child: Center(
+                        child: SvgPicture.asset(
+                          'assets/icons/arrow-left.svg',
+                          width: 20.r,
+                          height: 20.r,
+                          colorFilter: ColorFilter.mode(AppColors.paper, BlendMode.srcIn),
+                        ),
+                      ),
           ),
         ),
         SizedBox(width: 12.r),

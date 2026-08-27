@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/theme/app_theme.dart';
 import '../events/host_event_screen.dart';
 import '../../core/responsive/responsive.dart';
@@ -158,7 +159,12 @@ class OrganizerDashboardScreen extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
           ),
-          trailing: Icon(Icons.chevron_right, color: AppColors.secondaryText, size: 20.r),
+          trailing: SvgPicture.asset(
+                        'assets/icons/arrow-right.svg',
+                        width: 20.r,
+                        height: 20.r,
+                        colorFilter: ColorFilter.mode(AppColors.secondaryText, BlendMode.srcIn),
+                      ),
           onTap: () {},
         ),
       ),
@@ -180,7 +186,12 @@ class OrganizerDashboardScreen extends StatelessWidget {
               ),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, size: 20.r),
+          icon: SvgPicture.asset(
+            'assets/icons/arrow-left.svg',
+            width: 20.r,
+            height: 20.r,
+            colorFilter: const ColorFilter.mode(AppColors.paper, BlendMode.srcIn),
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -222,7 +233,12 @@ class OrganizerDashboardScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: Color(0xFFFFC107)),
+                  SvgPicture.asset(
+                        'assets/icons/arrow-right.svg',
+                        width: 20.r,
+                        height: 20.r,
+                        colorFilter: ColorFilter.mode(Color(0xFFFFC107), BlendMode.srcIn),
+                      ),
                 ],
               ),
             ),

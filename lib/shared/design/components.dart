@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/responsive/responsive.dart';
@@ -26,7 +27,12 @@ class PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final btn = ElevatedButton(
-      onPressed: onPressed,
+      onPressed: onPressed == null
+          ? null
+          : () {
+              HapticFeedback.mediumImpact();
+              onPressed!();
+            },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -42,7 +48,10 @@ class PrimaryButton extends StatelessWidget {
             Icon(icon, size: 18.r, color: AppColors.onNeon),
             SizedBox(width: Insets.xs),
           ],
-          Text(label.toUpperCase()),
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(color: Colors.white),
+          ),
         ],
       ),
     );
@@ -68,7 +77,12 @@ class SecondaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final btn = OutlinedButton(
-      onPressed: onPressed,
+      onPressed: onPressed == null
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onPressed!();
+            },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -103,7 +117,10 @@ class FilterChipX extends StatelessWidget {
   Widget build(BuildContext context) {
     final active = activeColor ?? AppColors.lime;
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: AnimatedContainer(
         duration: Motion.fast,
         padding: EdgeInsets.symmetric(horizontal: 14.r, vertical: 8.r),

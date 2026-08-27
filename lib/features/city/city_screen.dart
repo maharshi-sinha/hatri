@@ -69,7 +69,7 @@ class CityScreen extends StatelessWidget {
                   } else if (state is EventsLoaded) {
                     final events = state.events;
                     return ListView(
-                      padding: EdgeInsets.only(bottom: 100.r),
+                      padding: EdgeInsets.only(bottom: 140.r),
                       children: [
                         const SectionHeader(
                           eyebrow: 'JUST DROPPED',
@@ -117,8 +117,7 @@ class CityScreen extends StatelessWidget {
           return EventCard(
             event: events[index],
             onTap: () {
-              Navigator.push(
-                context,
+              Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute(
                   builder: (context) => EventDetailsScreen(event: events[index]),
                 ),
@@ -138,7 +137,7 @@ class CityScreen extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 180.r,
+      height: 190.r,
       child: ListView.builder(
         padding: EdgeInsets.symmetric(horizontal: 20.0.r),
         scrollDirection: Axis.horizontal,
@@ -149,60 +148,88 @@ class CityScreen extends StatelessWidget {
           return Container(
             width: 280.r,
             margin: EdgeInsets.only(right: 14.0.r),
-            padding: EdgeInsets.all(24.r),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(20.r),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -20.r,
-                  bottom: -20.r,
-                  child: Container(
-                    width: 100.r,
-                    height: 100.r,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: vColor.withValues(alpha: 0.15),
-                    ),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                      child: Container(color: Colors.transparent),
+              child: Stack(
+                children: [
+                  // base fill
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        border: Border.all(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(20.r),
+                      ),
                     ),
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 4.r),
-                      decoration: BoxDecoration(
-                        color: vColor.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                      child: Text(
-                        venue['type'] as String,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: vColor,
-                          fontWeight: FontWeight.bold,
+                  // bottom-right soft accent blob (Gaussian blurred)
+                  Positioned(
+                    right: -50.r,
+                    bottom: -60.r,
+                    child: ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                      child: Container(
+                        width: 180.r,
+                        height: 180.r,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: vColor.withValues(alpha: 0.55),
                         ),
                       ),
                     ),
-                    SizedBox(height: 12.r),
-                    Text(
-                      (venue['name'] as String).toUpperCase(),
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: 28.sp,
-                        color: AppColors.primaryText,
-                        height: 1.0,
+                  ),
+                  // top-left soft counter-blob for balance
+                  Positioned(
+                    left: -40.r,
+                    top: -50.r,
+                    child: ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                      child: Container(
+                        width: 120.r,
+                        height: 120.r,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: vColor.withValues(alpha: 0.18),
+                        ),
                       ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  // content
+                  Padding(
+                    padding: EdgeInsets.all(24.r),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10.r, vertical: 6.r),
+                          decoration: BoxDecoration(
+                            color: vColor.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(6.r),
+                          ),
+                          child: Text(
+                            venue['type'] as String,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: vColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 14.r),
+                        Text(
+                          (venue['name'] as String).toUpperCase(),
+                          style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                            fontSize: 26.sp,
+                            color: AppColors.primaryText,
+                            height: 1.1,
+                            letterSpacing: 0.5.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/responsive/responsive.dart';
@@ -23,7 +24,13 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
+      // Keyboard overlays the content — prevents the empty state from
+      // getting squashed and overflowing.
+      resizeToAvoidBottomInset: false,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: SafeArea(
         child: Column(
           children: [
             Padding(
@@ -31,7 +38,13 @@ class _SearchScreenState extends State<SearchScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      // Dismiss keyboard BEFORE popping so the keyboard slide-out
+                      // doesn't stutter the route transition on the same frame.
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      Navigator.pop(context);
+                    },
                     child: Container(
                       width: 50.r,
                       height: 50.r,
@@ -40,7 +53,14 @@ class _SearchScreenState extends State<SearchScreen> {
                         border: Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(16.r),
                       ),
-                      child: Icon(Icons.arrow_back, color: AppColors.secondaryText, size: 20.r),
+                      child: Center(
+                        child: SvgPicture.asset(
+                          'assets/icons/arrow-left.svg',
+                          width: 26.r,
+                          height: 26.r,
+                          colorFilter: const ColorFilter.mode(AppColors.secondaryText, BlendMode.srcIn),
+                        ),
+                      ),
                     ),
                   ),
                   SizedBox(width: 16.r),
@@ -126,6 +146,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

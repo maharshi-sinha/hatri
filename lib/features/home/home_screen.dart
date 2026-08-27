@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -137,7 +139,7 @@ class HomeScreen extends StatelessWidget {
             itemCount: events.length,
             itemBuilder: (context, i) => EventCard(
               event: events[i],
-              onTap: () => Navigator.push(context,
+              onTap: () => Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(builder: (_) => EventDetailsScreen(event: events[i]))),
             ),
           ),
@@ -158,14 +160,14 @@ class HomeScreen extends StatelessWidget {
       children: [
         SectionHeader(title: title, eyebrow: eyebrow, accent: accent),
         SizedBox(
-          height: 210.r,
+          height: 340.r,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: Insets.lg),
             itemCount: events.length,
             itemBuilder: (context, i) => SmallEventCard(
               event: events[i],
-              onTap: () => Navigator.push(context,
+              onTap: () => Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(builder: (_) => EventDetailsScreen(event: events[i]))),
             ),
           ),
@@ -341,7 +343,7 @@ class _WeekDropCard extends StatelessWidget {
                         ),
                         SizedBox(height: 8.r),
                         Text(
-                          'Your weekly drop of the scene — festivals, open mics, club nights.',
+                          'Your weekly drop of the scene. Fests, open mics, club nights.',
                           style: TextStyle(
                             fontFamily: 'GeneralSans',
                             fontWeight: FontWeight.w600,
@@ -391,45 +393,35 @@ class _FooterCityscape extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 405.r,
+      height: 620.r,
       width: double.infinity,
       child: Stack(
-        alignment: Alignment.bottomLeft,
+        alignment: Alignment.centerLeft,
         children: [
-          // Skyline background — invert black-on-white line art so it renders
-          // as white lines on our dark ground, then a subtle opacity wash.
+          // Illustration — full-bleed to width, anchored bottom. Bottom
+          // padding lifts it clear of the nav bar. iOS uses the floating
+          // glass nav (needs more clearance) while Android's material nav
+          // sits flush, so the offset stays tight.
           Positioned.fill(
-            child: Opacity(
-              opacity: 0.22,
-              child: ColorFiltered(
-                colorFilter: const ColorFilter.matrix(<double>[
-                  -1, 0, 0, 0, 255,
-                  0, -1, 0, 0, 255,
-                  0, 0, -1, 0, 255,
-                  0, 0, 0, 1, 0,
-                ]),
+            child: Padding(
+              padding: EdgeInsets.only(bottom: Platform.isIOS ? 50.r : 0),
+              child: Opacity(
+                opacity: 0.2,
                 child: Image.asset(
                   'assets/images/city_skyline.png',
-                  // Full-bleed: the art is taller than the band, so cover fills
-                  // edge-to-edge and crops the bottom rather than letterboxing
-                  // the sides. topCenter keeps the skyline + clouds intact.
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
+                  fit: BoxFit.fitWidth,
+                  alignment: Alignment.bottomCenter,
                   errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                 ),
               ),
             ),
           ),
-          // Wordmark + tagline — left-aligned, seated low in the band so the
-          // skyline reads above it and the prop art carries on below.
+          // Wordmark + tagline — left, nudged just below vertical center so
+          // more of the skyline art breathes above it.
           Align(
-            alignment: Alignment.bottomLeft,
+            alignment: const Alignment(-1.0, 0.05),
             child: Padding(
-              padding: EdgeInsets.only(
-                left: 20.r,
-                right: 20.r,
-                bottom: MediaQuery.of(context).padding.bottom,
-              ),
+              padding: EdgeInsets.only(left: 20.r, right: 20.r),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,9 +432,9 @@ class _FooterCityscape extends StatelessWidget {
                       fontFamily: 'ClashDisplay',
                       fontWeight: FontWeight.w700,
                       fontStyle: FontStyle.italic,
-                      fontSize: 68.sp,
+                      fontSize: 52.sp,
                       height: 1.0,
-                      letterSpacing: -2.0.sp,
+                      letterSpacing: -1.6.sp,
                       color: AppColors.paper,
                     ),
                   ),
@@ -455,21 +447,21 @@ class _FooterCityscape extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: 'GeneralSans',
                           fontWeight: FontWeight.w600,
-                          fontSize: 20.sp,
+                          fontSize: 16.sp,
                           color: AppColors.paper,
                         ),
                       ),
                       SvgPicture.asset(
                         'assets/icons/heart.svg',
-                        width: 20.r,
-                        height: 18.r,
+                        width: 16.r,
+                        height: 14.r,
                       ),
                       Text(
                         ' in India',
                         style: TextStyle(
                           fontFamily: 'GeneralSans',
                           fontWeight: FontWeight.w600,
-                          fontSize: 20.sp,
+                          fontSize: 16.sp,
                           color: AppColors.paper,
                         ),
                       ),

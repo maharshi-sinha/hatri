@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/models.dart';
@@ -43,7 +44,10 @@ class EventCard extends StatelessWidget {
           offset: Offset(5.r, 5.r),
           radius: Corners.lg,
           child: GestureDetector(
-            onTap: onTap,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onTap();
+            },
             child: ClipRRect(
               borderRadius: BorderRadius.circular(Corners.lg),
               child: Container(
@@ -121,11 +125,23 @@ class EventCard extends StatelessWidget {
                               ),
                               const Spacer(),
                               if (event.isSafeVenue)
-                                SvgPicture.asset(
-                                  'assets/icons/Shield.svg',
-                                  width: 14.r,
-                                  height: 14.r,
-                                  colorFilter: ColorFilter.mode(softOnBlock, BlendMode.srcIn),
+                                Container(
+                                  width: 26.r,
+                                  height: 26.r,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: (blockColor.computeLuminance() > 0.55 ? AppColors.onNeon : AppColors.paper).withValues(alpha: 0.12),
+                                    border: Border.all(
+                                      color: (blockColor.computeLuminance() > 0.55 ? AppColors.onNeon : AppColors.paper).withValues(alpha: 0.25),
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: SvgPicture.asset(
+                                    'assets/icons/Shield.svg',
+                                    width: 13.r,
+                                    height: 13.r,
+                                    colorFilter: ColorFilter.mode(softOnBlock, BlendMode.srcIn),
+                                  ),
                                 ),
                             ],
                           ),

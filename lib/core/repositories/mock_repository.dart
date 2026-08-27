@@ -117,6 +117,7 @@ class MockRepository {
       isSafeVenue: true,
       lineup: ['cr3', 'cr5'],
       attendees: [_attendees[0], _attendees[1], _attendees[2], _attendees[3]],
+      priceRupees: 499,
     ),
     Event(
       id: 'e2',
@@ -184,6 +185,7 @@ class MockRepository {
       lat: 21.2205,
       lng: 81.6511,
       attendees: [_attendees[5], _attendees[7]],
+      priceRupees: 250,
     ),
     Event(
       id: 'e5',
@@ -206,6 +208,7 @@ class MockRepository {
       lng: 81.6820,
       isSafeVenue: true,
       lineup: ['cr5'],
+      priceRupees: 700,
       attendees: [_attendees[0], _attendees[4], _attendees[6]],
     ),
     Event(
@@ -235,6 +238,73 @@ class MockRepository {
   static List<Attendee> _sample(List<int> idxs) =>
       [for (final i in idxs) _attendees[i]];
 
+  // Wall-photo builder — deterministic picsum seeds keep the visual stable.
+  static WallPhoto _wall({
+    required String id,
+    required String seed,
+    required int daysAgo,
+    required String eventTitle,
+    required int byIdx,
+    String? caption,
+    int likes = 0,
+    bool youAreIn = false,
+  }) =>
+      WallPhoto(
+        id: id,
+        photoUrl: 'https://picsum.photos/seed/hatri-wall-$seed/700/700',
+        attendedAt: DateTime.now().subtract(Duration(days: daysAgo)),
+        eventTitle: eventTitle,
+        byUserName: _attendees[byIdx].name,
+        byUserAvatarUrl: _attendees[byIdx].avatarUrl,
+        caption: caption,
+        likes: likes,
+        youAreIn: youAreIn,
+      );
+
+  // Bulk-generator for wall photos — pads out a scene's memory wall with
+  // deterministic seeds so the grid feels populated (~20 photos each).
+  static List<WallPhoto> _wallBulk({
+    required String prefix,
+    required int count,
+    required String eventTitle,
+    required int daysAgoStart,
+    required List<int> byIdxRotation,
+    List<String>? captions,
+  }) {
+    return [
+      for (int i = 0; i < count; i++)
+        _wall(
+          id: '$prefix-$i',
+          seed: '$prefix-$i',
+          daysAgo: daysAgoStart + i,
+          eventTitle: eventTitle,
+          byIdx: byIdxRotation[i % byIdxRotation.length],
+          caption: captions != null && captions.isNotEmpty
+              ? captions[i % captions.length]
+              : null,
+          likes: (i * 7 + 5) % 40 + 3,
+          youAreIn: i % 5 == 0,
+        ),
+    ];
+  }
+
+  // Chatter-message builder — assumes ordering by hours ago.
+  static ChatterMessage _chat({
+    required String id,
+    required int byIdx,
+    required String text,
+    required int hoursAgo,
+    bool isMe = false,
+  }) =>
+      ChatterMessage(
+        id: id,
+        byUserName: isMe ? 'you' : _attendees[byIdx].name,
+        byUserAvatarUrl: _attendees[byIdx].avatarUrl,
+        text: text,
+        at: DateTime.now().subtract(Duration(hours: hoursAgo)),
+        isMe: isMe,
+      );
+
   static final List<Community> mockCommunities = [
     // 🎨 INTEREST
     Community(
@@ -246,31 +316,141 @@ class MockRepository {
       emoji: '📸',
       type: CommunityType.interest,
       hostId: 'cr4',
+      coHostIds: const ['cr1'],
       nextEventId: 'e6',
       location: 'Raipur',
       memberAvatars: _sample([0, 3, 5, 7]),
+      hostedWeekly: const HostedWeekly(
+        dayLabel: 'SATURDAYS',
+        timeLabel: '5:00 PM',
+        venueLabel: 'ROTATING · PURANI BASTI THIS WEEK',
+        description: 'golden hour shoot + chai after',
+        nextInstanceEventId: 'e6',
+      ),
+      vibeTags: const ['🎞️ film first', '🌆 golden hour heads', '☕ chai crew'],
+      eventsThisMonth: 4,
+      rating: 4.9,
+      reviewCount: 128,
+      newMembersThisWeek: 12,
+      firstTimerGuide: const FirstTimerGuide(
+        whatToExpect: [
+          "we meet at the venue 15 mins before, chai + intros",
+          "2 hour shoot walk, all levels welcome",
+          "post-shoot review at mocha, host buys chai",
+        ],
+        dressVibe: 'casual · comfortable shoes a must',
+        whatToBring: [
+          'any camera (phone works)',
+          'a lens if you have (35mm or 50mm sweet)',
+          'water bottle',
+        ],
+        soloFriendly: true,
+        soloLastTime: 6,
+      ),
+      memberVibes: [
+        MemberVibe(
+          quote: 'my sundays finally have a plan.',
+          byName: 'Aditi',
+          byAvatarUrl: 'https://i.pravatar.cc/100?img=32',
+        ),
+        MemberVibe(
+          quote: 'met 3 of my best friends here.',
+          byName: 'Rohan',
+          byAvatarUrl: 'https://i.pravatar.cc/100?img=12',
+        ),
+        MemberVibe(
+          quote: 'ravi actually critiques your shots. love that.',
+          byName: 'Meera',
+          byAvatarUrl: 'https://i.pravatar.cc/100?img=41',
+        ),
+      ],
+      upcomingEventIds: const ['e6'],
+      wallPhotos: [
+        ..._wallBulk(
+          prefix: 'photoclub-cityscape',
+          count: 8,
+          eventTitle: 'Sunday Cityscape',
+          daysAgoStart: 3,
+          byIdxRotation: const [3, 0, 5, 7],
+          captions: const [
+            'golden hour hit different',
+            "ravi's shot > everyone else",
+            'test roll came out clean',
+            'this cafe never disappoints',
+          ],
+        ),
+        ..._wallBulk(
+          prefix: 'photoclub-naya',
+          count: 6,
+          eventTitle: 'Naya Raipur Morning',
+          daysAgoStart: 10,
+          byIdxRotation: const [5, 7, 1, 3],
+          captions: const ['6am but worth it', 'foggy morning magic', 'best light this year'],
+        ),
+        ..._wallBulk(
+          prefix: 'photoclub-marine',
+          count: 5,
+          eventTitle: 'Marine Drive Sunset',
+          daysAgoStart: 17,
+          byIdxRotation: const [3, 5, 0, 6],
+          captions: const ['sun setting = crew arriving', 'chai + camera', 'best sunset in town'],
+        ),
+      ],
+      weeklyDrop: CommunityDrop(
+        id: 'd1',
+        hostName: 'Ravi',
+        hostAvatarUrl: 'https://i.pravatar.cc/100?img=12',
+        publishedAt: DateTime.now().subtract(const Duration(days: 1)),
+        headline: 'THIS WEEK: PURANI BASTI @ GOLDEN HOUR',
+        body: "Meeting at the Ghadi Chowk at 4:45pm sharp. Bring a wide lens if you have one. Chai after at Mocha, my treat for whoever brings the best shot.",
+        linkedEventIds: const ['e6'],
+      ),
+      chatterEnabled: true,
+      chatter: [
+        _chat(id: 'ch1', byIdx: 2, text: 'weather looking clear for saturday?', hoursAgo: 4),
+        _chat(id: 'ch2', byIdx: 5, text: 'yeah, sunset around 6:15', hoursAgo: 3),
+        _chat(id: 'ch3', byIdx: 0, text: "i'll bring my 35mm", hoursAgo: 2),
+        _chat(id: 'ch4', byIdx: 7, text: 'anyone driving from civil lines? need a lift 🙋', hoursAgo: 1),
+      ],
     ),
     Community(
       id: 'c2',
-      name: 'Coffee Lovers Raipur',
-      description: 'Best cafes and brews in town. Serious coffee discussions only.',
-      coverUrl: 'https://picsum.photos/seed/hatri-coffee/800/500',
+      name: 'Chai Pe Charcha',
+      description: 'slow sundays. long convos. cafe hopping. classic chai + cool crowd.',
+      coverUrl: 'https://images.unsplash.com/photo-1516600164266-f3b8166ae679?w=800&q=80',
       memberCount: 890,
       emoji: '☕',
       type: CommunityType.interest,
       location: 'Raipur',
       memberAvatars: _sample([1, 2, 4, 6]),
-    ),
-    Community(
-      id: 'c3',
-      name: 'CG Gamers',
-      description: 'PC, Console, Mobile — all gamers welcome. Tournaments every month.',
-      coverUrl: 'https://picsum.photos/seed/hatri-gamers/800/500',
-      memberCount: 3200,
-      emoji: '🎮',
-      type: CommunityType.interest,
-      location: 'Chhattisgarh',
-      memberAvatars: _sample([2, 5, 7, 0]),
+      vibeTags: const ['☕ chai first', '📓 slow talkers', '🌿 cafe hoppers'],
+      eventsThisMonth: 3,
+      rating: 4.6,
+      reviewCount: 89,
+      newMembersThisWeek: 5,
+      firstTimerGuide: const FirstTimerGuide(
+        whatToExpect: [
+          "different cafe every sunday, host picks",
+          "no agenda, just long chats",
+          "usually 2-3 hours, leave when you want",
+        ],
+        dressVibe: 'literally whatever',
+        whatToBring: ['your appetite for chai'],
+        soloFriendly: true,
+        soloLastTime: 4,
+      ),
+      memberVibes: [
+        MemberVibe(
+          quote: "the only sunday plan i actually keep.",
+          byName: 'Priya',
+          byAvatarUrl: 'https://i.pravatar.cc/100?img=47',
+        ),
+        MemberVibe(
+          quote: 'found my favorite cafes through this crew.',
+          byName: 'Kabir',
+          byAvatarUrl: 'https://i.pravatar.cc/100?img=15',
+        ),
+      ],
     ),
     Community(
       id: 'c4',
@@ -280,100 +460,120 @@ class MockRepository {
       memberCount: 560,
       emoji: '🏃‍♂️',
       type: CommunityType.interest,
+      hostId: 'cr2',
       location: 'Marine Drive',
       memberAvatars: _sample([3, 6, 1, 4]),
-    ),
-
-    // 📍 NEIGHBORHOOD
-    Community(
-      id: 'c5',
-      name: 'Civil Lines Nightlife',
-      description: 'The Civil Lines crew — cafes, open mics, weekend spots.',
-      coverUrl: 'https://picsum.photos/seed/hatri-civillines/800/500',
-      memberCount: 720,
-      emoji: '🍸',
-      type: CommunityType.neighborhood,
-      nextEventId: 'e2',
-      location: 'Civil Lines',
-      memberAvatars: _sample([0, 4, 6, 2]),
-    ),
-    Community(
-      id: 'c6',
-      name: 'Telibandha Weekends',
-      description: 'Marine Drive walks, farmers markets, sunset chai spots.',
-      coverUrl: 'https://picsum.photos/seed/hatri-telibandha/800/500',
-      memberCount: 480,
-      emoji: '🌅',
-      type: CommunityType.neighborhood,
-      nextEventId: 'e3',
-      location: 'Telibandha',
-      memberAvatars: _sample([1, 3, 5, 7]),
-    ),
-    Community(
-      id: 'c7',
-      name: 'VIP Road Foodies',
-      description: 'Best food finds along VIP Road. Weekly food crawls.',
-      coverUrl: 'https://picsum.photos/seed/hatri-vip/800/500',
-      memberCount: 340,
-      emoji: '🍽️',
-      type: CommunityType.neighborhood,
-      location: 'VIP Road',
-      memberAvatars: _sample([2, 5, 0, 6]),
+      hostedWeekly: const HostedWeekly(
+        dayLabel: 'SUNDAYS',
+        timeLabel: '6:00 AM',
+        venueLabel: 'MARINE DRIVE · TELIBANDHA',
+        description: '5km loop, all paces welcome',
+      ),
+      vibeTags: const ['🌅 morning people', '🏃 all paces', '🎧 no phones'],
+      eventsThisMonth: 4,
+      rating: 4.8,
+      reviewCount: 62,
+      newMembersThisWeek: 3,
+      firstTimerGuide: const FirstTimerGuide(
+        whatToExpect: [
+          "meet at parking gate 5:55am sharp",
+          "5km loop, walk if you need to",
+          "we regroup at the end, no one runs alone",
+        ],
+        dressVibe: 'anything you can run in',
+        whatToBring: ['water bottle', 'a jacket for after'],
+        soloFriendly: true,
+        soloLastTime: 8,
+      ),
+      memberVibes: [
+        MemberVibe(
+          quote: "showed up once. now i can't miss it.",
+          byName: 'Sana',
+          byAvatarUrl: 'https://i.pravatar.cc/100?img=41',
+        ),
+        MemberVibe(
+          quote: 'zero pressure, all pace. love this crew.',
+          byName: 'Arjun',
+          byAvatarUrl: 'https://i.pravatar.cc/100?img=8',
+        ),
+      ],
+      wallPhotos: [
+        ..._wallBulk(
+          prefix: 'runners-marine',
+          count: 7,
+          eventTitle: 'Sunday Run · Marine Drive',
+          daysAgoStart: 4,
+          byIdxRotation: const [3, 6, 1, 4],
+          captions: const ["5k done, chai earned", 'sunrise crew showed up', 'no phones, all vibes'],
+        ),
+        ..._wallBulk(
+          prefix: 'runners-naya',
+          count: 6,
+          eventTitle: 'Naya Raipur Loop',
+          daysAgoStart: 11,
+          byIdxRotation: const [1, 4, 3, 6],
+          captions: const ['fastest 5k so far', 'sneha brought new shoes', 'post-run chai squad'],
+        ),
+        ..._wallBulk(
+          prefix: 'runners-hills',
+          count: 5,
+          eventTitle: 'Hill Trail Special',
+          daysAgoStart: 20,
+          byIdxRotation: const [6, 3, 4],
+          captions: const ['toughest run this month', 'legs still crying', 'view >>>'],
+        ),
+      ],
+      weeklyDrop: CommunityDrop(
+        id: 'dr1',
+        hostName: 'Sana',
+        hostAvatarUrl: 'https://i.pravatar.cc/100?img=41',
+        publishedAt: DateTime.now().subtract(const Duration(days: 2)),
+        headline: "THIS SUNDAY: EASY 5K, POST-RUN CHAI",
+        body: "Rain forecast dropped to 10%. We're on. Meet at the parking gate 5:55am. Sneha's bringing tape for anyone with sore knees.",
+      ),
+      chatterEnabled: true,
+      chatter: [
+        _chat(id: 'chr1', byIdx: 1, text: 'rain today?', hoursAgo: 5),
+        _chat(id: 'chr2', byIdx: 4, text: 'no, we running', hoursAgo: 5),
+        _chat(id: 'chr3', byIdx: 3, text: 'bring extra water', hoursAgo: 3),
+      ],
     ),
 
     // 🎓 COLLEGE
     Community(
-      id: 'c8',
-      name: 'NIT Raipur Community',
-      description: 'The unofficial home of every NITian. Fests, hacks, hangouts.',
-      coverUrl: 'https://picsum.photos/seed/hatri-nit/800/500',
-      memberCount: 4200,
-      emoji: '🎓',
-      type: CommunityType.college,
-      hostId: 'cr1',
-      nextEventId: 'e1',
-      location: 'NIT Raipur',
-      memberAvatars: _sample([1, 2, 4, 7]),
-    ),
-    Community(
       id: 'c9',
-      name: 'IIT Bhilai Circle',
-      description: 'IIT Bhilai students & alumni. Talks, projects, chai runs.',
-      coverUrl: 'https://picsum.photos/seed/hatri-iitbhilai/800/500',
+      name: 'The Study Sesh',
+      description: 'college kids, deadline warriors, chai + notes crew.',
+      coverUrl: 'https://picsum.photos/seed/hatri-studysesh/800/500',
       memberCount: 1100,
-      emoji: '⚙️',
+      emoji: '📚',
       type: CommunityType.college,
-      location: 'IIT Bhilai',
-      memberAvatars: _sample([3, 0, 6, 5]),
-    ),
-
-    // 🎤 CREATOR HUBS
-    Community(
-      id: 'c10',
-      name: 'Aditi Sings · Fans',
-      description: 'Indie music lovers who show up to Aditi\'s cafe sets.',
-      coverUrl: 'https://picsum.photos/seed/hatri-aditi/800/500',
-      memberCount: 620,
-      emoji: '🎤',
-      type: CommunityType.creator,
-      hostId: 'cr3',
-      nextEventId: 'e2',
       location: 'Raipur',
-      memberAvatars: _sample([4, 1, 7, 3]),
+      memberAvatars: _sample([3, 0, 6, 5]),
+      eventsThisMonth: 2,
+      rating: 4.4,
+      reviewCount: 34,
+      newMembersThisWeek: 7,
+      firstTimerGuide: const FirstTimerGuide(
+        whatToExpect: [
+          "study together, take chai breaks, actually get work done",
+          "usually at cafes around civil lines",
+          "vibe is silent-but-together, not chatty",
+        ],
+        dressVibe: 'chill · loungewear energy',
+        whatToBring: ['laptop', 'notes', 'headphones'],
+        soloFriendly: true,
+        soloLastTime: 10,
+      ),
+      memberVibes: [
+        MemberVibe(
+          quote: 'the only way i finish assignments.',
+          byName: 'Ishita',
+          byAvatarUrl: 'https://i.pravatar.cc/100?img=45',
+        ),
+      ],
     ),
-    Community(
-      id: 'c11',
-      name: 'DJ Mira · Crew',
-      description: 'Late-night techno crowd. Circuit regulars welcome.',
-      coverUrl: 'https://picsum.photos/seed/hatri-djmira/800/500',
-      memberCount: 890,
-      emoji: '🎧',
-      type: CommunityType.creator,
-      hostId: 'cr5',
-      nextEventId: 'e5',
-      location: 'Circuit Club',
-      memberAvatars: _sample([2, 6, 0, 4]),
-    ),
+    
   ];
 }
 

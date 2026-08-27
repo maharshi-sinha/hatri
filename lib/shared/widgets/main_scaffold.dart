@@ -25,7 +25,7 @@ class _NavTab {
 const List<_NavTab> _navTabs = [
   _NavTab('assets/icons/Home.svg', 'Home'),
   _NavTab('assets/icons/events.svg', 'Events'),
-  _NavTab('assets/icons/communities.svg', 'Communities'),
+  _NavTab('assets/icons/communities.svg', 'Scenes'),
   _NavTab('assets/icons/city.svg', 'City'),
   _NavTab('assets/icons/Profile.svg', 'Profile'),
 ];
@@ -123,7 +123,7 @@ class MainScaffold extends StatelessWidget {
   }
 
   void _onTap(int index, BuildContext context) {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     switch (index) {
       case 0:
         context.go('/');

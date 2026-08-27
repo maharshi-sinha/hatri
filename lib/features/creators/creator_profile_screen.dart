@@ -98,7 +98,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   void _share() {
     HapticFeedback.selectionClick();
     Share.share(
-      "Check out ${creator.name} ${creator.handle} on Hatri — Raipur's digital haat.",
+      "Check out ${creator.name} ${creator.handle} on Hatri. The digital haat.",
       subject: creator.name,
     );
   }
@@ -249,7 +249,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _iconChip(Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
+                  _svgChip('assets/icons/arrow-left.svg', onTap: () => Navigator.pop(context)),
                   Row(
                     children: [
                       _svgChip('assets/icons/Upload.svg', onTap: _share),
@@ -442,7 +442,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
               Expanded(
                 child: _statCell(
                   'RATING',
-                  creator.rating > 0 ? creator.rating.toStringAsFixed(1) : '—',
+                  creator.rating > 0 ? creator.rating.toStringAsFixed(1) : 'new',
                   svgIcon: creator.rating > 0 ? 'assets/icons/Star.svg' : null,
                   iconColor: AppColors.lime,
                 ),
@@ -542,8 +542,7 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
         return SmallEventCard(
           event: e,
           isGrid: true,
-          onTap: () => Navigator.push(
-            context,
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(builder: (_) => EventDetailsScreen(event: e)),
           ),
         );

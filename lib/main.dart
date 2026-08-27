@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'core/theme/app_theme.dart';
+
+import 'core/di/injection_container.dart' as di;
 import 'core/responsive/responsive.dart';
 import 'core/routing/app_router.dart';
-import 'features/events/bloc/events_bloc.dart';
-import 'features/events/bloc/events_event.dart';
+import 'core/theme/app_theme.dart';
 import 'features/communities/bloc/communities_bloc.dart';
 import 'features/communities/bloc/communities_event.dart';
-import 'core/di/injection_container.dart' as di;
+import 'features/events/bloc/events_bloc.dart';
+import 'features/events/bloc/events_event.dart';
+import 'flavors.dart';
+
+// Flavor is injected at build time via --dart-define=appFlavor=dev|prod.
+// If nothing is passed we default to prod so plain `flutter run` still works.
+const String _appFlavorEnv =
+    String.fromEnvironment('appFlavor', defaultValue: 'prod');
 
 void main() async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
   // Seed the scale before the first frame so sizing read ahead of the first
   // MediaQuery is already correct.
   AppScale.updateFromView(binding.platformDispatcher.views.first);
+  F.appFlavor = Flavor.values.firstWhere(
+    (e) => e.name == _appFlavorEnv,
+    orElse: () => Flavor.prod,
+  );
   di.init();
   runApp(const HatriApp());
 }
@@ -33,13 +44,32 @@ class HatriApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp.router(
-        title: 'Hatri',
+        title: F.title,
         theme: AppTheme.darkTheme,
         routerConfig: appRouter,
-
-        
         debugShowCheckedModeBanner: false,
-        builder: (context, child) => _ResponsiveShell(child: child),
+        builder: (context, child) {
+          final shell = _ResponsiveShell(child: child);
+          if (F.appFlavor == Flavor.dev) {
+            return Directionality(
+              textDirection: TextDirection.ltr,
+              child: Banner(
+                location: BannerLocation.topEnd,
+                message: 'DEV',
+                color: AppColors.fuchsia,
+                textStyle: const TextStyle(
+                  fontFamily: 'GeneralSans',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  letterSpacing: 1.4,
+                  color: AppColors.paper,
+                ),
+                child: shell,
+              ),
+            );
+          }
+          return shell;
+        },
       ),
     );
   }
@@ -76,5 +106,3 @@ class _ResponsiveShell extends StatelessWidget {
     );
   }
 }
-
-

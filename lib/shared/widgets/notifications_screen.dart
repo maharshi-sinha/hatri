@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/responsive/responsive.dart';
 
@@ -26,7 +27,14 @@ class NotificationsScreen extends StatelessWidget {
                         border: Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(12.r),
                       ),
-                      child: Icon(Icons.arrow_back, color: AppColors.secondaryText, size: 20.r),
+                      child: Center(
+                        child: SvgPicture.asset(
+                          'assets/icons/arrow-left.svg',
+                          width: 20.r,
+                          height: 20.r,
+                          colorFilter: ColorFilter.mode(AppColors.secondaryText, BlendMode.srcIn),
+                        ),
+                      ),
                     ),
                   ),
                   SizedBox(width: 16.r),

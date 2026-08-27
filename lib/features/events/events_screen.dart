@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/components.dart';
+import '../../shared/design/motifs.dart';
+import '../../shared/widgets/burst_star.dart';
+import '../../shared/widgets/kinetic_marquee.dart';
 import '../../shared/widgets/small_event_card.dart';
 import 'bloc/events_bloc.dart';
 import 'bloc/events_event.dart';
@@ -22,15 +26,21 @@ class EventsScreen extends StatelessWidget {
       backgroundColor: AppColors.ground,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Header(),
-            const _DiscoveryFilterBar(),
-            SizedBox(height: 8.r),
-            const _CategoryChipsBar(),
-            SizedBox(height: 14.r),
-            const Expanded(child: _EventsGrid()),
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: _Header()),
+            const SliverToBoxAdapter(child: _DiscoveryFilterBar()),
+            SliverToBoxAdapter(child: SizedBox(height: 10.r)),
+            const _CategoryBrowseSliver(),
+            SliverToBoxAdapter(
+              child: KineticMarquee(
+                word: 'HAPPENING',
+                separatorWidget: BurstStar(size: 28.r, color: AppColors.fuchsia),
+              ),
+            ),
+            SliverToBoxAdapter(child: SizedBox(height: 10.r)),
+            const _EventsSliverGrid(),
+            SliverToBoxAdapter(child: SizedBox(height: 100.r)),
           ],
         ),
       ),
@@ -66,15 +76,22 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'RAIPUR SCENE',
-                  style: TextStyle(
-                    fontFamily: 'GeneralSans',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11.sp,
-                    letterSpacing: 1.6.sp,
-                    color: AppColors.lime,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    BurstStar(size: 12.r, color: AppColors.fuchsia),
+                    SizedBox(width: 6.r),
+                    Text(
+                      'RAIPUR SCENE',
+                      style: TextStyle(
+                        fontFamily: 'GeneralSans',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11.sp,
+                        letterSpacing: 1.6.sp,
+                        color: AppColors.lime,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -154,79 +171,371 @@ class _DiscoveryFilterBar extends StatelessWidget {
   }
 }
 
-class _CategoryChipsBar extends StatelessWidget {
-  const _CategoryChipsBar();
+/// Two-mode category browser — sliver-native so tile grid doesn't nest a
+/// GridView inside a SliverToBoxAdapter (that combo over-allocates height and
+/// creates a huge dead gap below the tiles).
+///   - no category selected → big visual 2x3 SliverGrid of tiles
+///   - category selected → compact dismissible chip in a SliverToBoxAdapter
+class _CategoryBrowseSliver extends StatelessWidget {
+  const _CategoryBrowseSliver();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<EventsBloc, EventsState>(
+      buildWhen: (a, b) {
+        if (a is! EventsLoaded || b is! EventsLoaded) return true;
+        return a.category != b.category;
+      },
       builder: (context, state) {
-        final active = state is EventsLoaded ? state.category : null;
-        return SizedBox(
-          height: 40.r,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: Insets.lg),
-            children: [
-              _catChip(context, null, 'All', active == null),
-              for (final c in EventCategory.values.where((c) => c != EventCategory.other))
-                _catChip(context, c, c.label, active == c),
-            ],
+        if (state is! EventsLoaded) {
+          return const SliverToBoxAdapter(child: SizedBox.shrink());
+        }
+        if (state.category != null) {
+          return SliverToBoxAdapter(
+            child: _SelectedCategoryChip(category: state.category!),
+          );
+        }
+        final cats = EventCategory.values.where((c) => c != EventCategory.other).toList();
+        return SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: Insets.lg),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10.r,
+              mainAxisSpacing: 10.r,
+              childAspectRatio: 1.6,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, i) => _CategoryTile(category: cats[i]),
+              childCount: cats.length,
+            ),
           ),
         );
       },
     );
   }
+}
 
-  Widget _catChip(BuildContext context, EventCategory? cat, String label, bool selected) {
+class _SelectedCategoryChip extends StatelessWidget {
+  final EventCategory category;
+  const _SelectedCategoryChip({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(right: 8.r),
-      child: FilterChipX(
-        label: label,
-        selected: selected,
-        onTap: () => context.read<EventsBloc>().add(SetCategoryFilter(selected ? null : cat)),
-        activeColor: cat == null ? AppColors.fuchsia : AppColors.fromHex(cat.colorHex),
+      padding: EdgeInsets.fromLTRB(Insets.lg, 4.r, Insets.lg, 4.r),
+      child: Row(
+        children: [
+          Text(
+            'FILTER',
+            style: TextStyle(
+              fontFamily: 'GeneralSans',
+              fontWeight: FontWeight.w800,
+              fontSize: 10.sp,
+              letterSpacing: 1.6.sp,
+              color: AppColors.muted,
+            ),
+          ),
+          SizedBox(width: 10.r),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              context.read<EventsBloc>().add(SetCategoryFilter(null));
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 8.r),
+              decoration: BoxDecoration(
+                color: AppColors.fromHex(category.colorHex),
+                borderRadius: BorderRadius.circular(Corners.pill),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    category.label.toUpperCase(),
+                    style: TextStyle(
+                      fontFamily: 'GeneralSans',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11.sp,
+                      letterSpacing: 1.2.sp,
+                      color: AppColors.onNeon,
+                    ),
+                  ),
+                  SizedBox(width: 6.r),
+                  Icon(Icons.close_rounded, size: 15.r, color: AppColors.onNeon),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              context.read<EventsBloc>().add(SetCategoryFilter(null));
+            },
+            child: Text(
+              'BROWSE ALL',
+              style: TextStyle(
+                fontFamily: 'GeneralSans',
+                fontWeight: FontWeight.w800,
+                fontSize: 10.sp,
+                letterSpacing: 1.4.sp,
+                color: AppColors.paper,
+                decoration: TextDecoration.underline,
+                decorationColor: AppColors.paper,
+                decorationThickness: 1.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _EventsGrid extends StatelessWidget {
-  const _EventsGrid();
+
+class _CategoryTile extends StatelessWidget {
+  final EventCategory category;
+  const _CategoryTile({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = AppColors.fromHex(category.colorHex);
+    final onLight = bg.computeLuminance() > 0.55;
+    final labelColor = onLight ? AppColors.onNeon : AppColors.paper;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        context.read<EventsBloc>().add(SetCategoryFilter(category));
+      },
+      child: Container(
+        clipBehavior: Clip.hardEdge,
+        decoration: BoxDecoration(
+          color: bg,
+          border: Border.all(color: AppColors.onNeon, width: 1.6),
+          borderRadius: BorderRadius.circular(Corners.md),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.onNeon.withValues(alpha: 0.5),
+              offset: Offset(3.r, 3.r),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            // Halftone dot texture patch — bottom-right zine texture
+            Positioned(
+              bottom: 0,
+              right: 0,
+              width: 110.r,
+              height: 90.r,
+              child: HalftoneBackground(
+                dotColor: AppColors.onNeon.withValues(alpha: 0.13),
+                dotSize: 2,
+                spacing: 8,
+              ),
+            ),
+            // Tilted emoji glyph, bottom-right, oversized
+            Positioned(
+              bottom: -12.r,
+              right: -10.r,
+              child: Transform.rotate(
+                angle: -14 * 3.14159 / 180,
+                child: Text(
+                  _glyphFor(category),
+                  style: TextStyle(fontSize: 62.sp, height: 1.0),
+                ),
+              ),
+            ),
+            // BurstStar accent, top-right, partially bleeding for chaos
+            Positioned(
+              top: -6.r,
+              right: -6.r,
+              child: Transform.rotate(
+                angle: 18 * 3.14159 / 180,
+                child: BurstStar(
+                  size: 26.r,
+                  color: labelColor.withValues(alpha: 0.28),
+                ),
+              ),
+            ),
+            // Small tape-style number badge, top-right (inside)
+            Positioned(
+              top: 10.r,
+              right: 12.r,
+              child: Transform.rotate(
+                angle: -6 * 3.14159 / 180,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6.r, vertical: 2.r),
+                  decoration: BoxDecoration(
+                    color: AppColors.onNeon,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                  child: Text(
+                    '0${_orderFor(category)}',
+                    style: TextStyle(
+                      fontFamily: 'ClashDisplay',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 10.sp,
+                      letterSpacing: 0.5.sp,
+                      color: labelColor == AppColors.onNeon ? bg : AppColors.paper,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Label top-left
+            Padding(
+              padding: EdgeInsets.fromLTRB(14.r, 12.r, 12.r, 12.r),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(height: 18.r), // clearance for number badge
+                  Text(
+                    _shortLabel(category),
+                    style: TextStyle(
+                      fontFamily: 'ClashDisplay',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 20.sp,
+                      height: 0.95,
+                      letterSpacing: -0.6.sp,
+                      color: labelColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // TAP → indicator, bottom-left
+            Positioned(
+              bottom: 10.r,
+              left: 14.r,
+              child: Text(
+                'TAP →',
+                style: TextStyle(
+                  fontFamily: 'GeneralSans',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 9.sp,
+                  letterSpacing: 1.4.sp,
+                  color: labelColor.withValues(alpha: 0.55),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _glyphFor(EventCategory c) {
+    switch (c) {
+      case EventCategory.fest:
+        return '🎪';
+      case EventCategory.openMic:
+        return '🎤';
+      case EventCategory.clubNight:
+        return '🪩';
+      case EventCategory.market:
+        return '🛍️';
+      case EventCategory.workshop:
+        return '🎨';
+      case EventCategory.meetup:
+        return '☕';
+      case EventCategory.other:
+        return '★';
+    }
+  }
+
+  int _orderFor(EventCategory c) {
+    switch (c) {
+      case EventCategory.fest:
+        return 1;
+      case EventCategory.openMic:
+        return 2;
+      case EventCategory.clubNight:
+        return 3;
+      case EventCategory.market:
+        return 4;
+      case EventCategory.workshop:
+        return 5;
+      case EventCategory.meetup:
+        return 6;
+      case EventCategory.other:
+        return 7;
+    }
+  }
+
+  String _shortLabel(EventCategory c) {
+    switch (c) {
+      case EventCategory.fest:
+        return 'FESTS';
+      case EventCategory.openMic:
+        return 'OPEN\nMIC';
+      case EventCategory.clubNight:
+        return 'NIGHTS\nOUT';
+      case EventCategory.market:
+        return 'MARKETS';
+      case EventCategory.workshop:
+        return 'MAKERS';
+      case EventCategory.meetup:
+        return 'MEETUPS';
+      case EventCategory.other:
+        return 'OTHER';
+    }
+  }
+}
+
+/// Sliver-based events grid — lives inside the screen's single CustomScrollView
+/// so category tiles + event cards scroll together as one surface (no nested
+/// scroll region, no bottom-anchored gap).
+class _EventsSliverGrid extends StatelessWidget {
+  const _EventsSliverGrid();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<EventsBloc, EventsState>(
       builder: (context, state) {
         if (state is EventsLoading) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.fuchsia));
+          return const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: Center(child: CircularProgressIndicator(color: AppColors.fuchsia)),
+            ),
+          );
         }
         if (state is EventsLoaded) {
           final events = state.filtered;
-          if (events.isEmpty) return const _EmptyState();
-          return GridView.builder(
-            padding: EdgeInsets.fromLTRB(Insets.lg, 0, Insets.lg, 100.r),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12.r,
-              mainAxisSpacing: 12.r,
-              childAspectRatio: 0.72,
+          if (events.isEmpty) {
+            return const SliverToBoxAdapter(child: _EmptyState());
+          }
+          return SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: Insets.lg),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12.r,
+                mainAxisSpacing: 20.r,
+                childAspectRatio: 0.56,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  final e = events[i];
+                  return SmallEventCard(
+                    event: e,
+                    isGrid: true,
+                    onTap: () => Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute(builder: (_) => EventDetailsScreen(event: e)),
+                    ),
+                  );
+                },
+                childCount: events.length,
+              ),
             ),
-            itemCount: events.length,
-            itemBuilder: (context, i) {
-              final e = events[i];
-              return SmallEventCard(
-                event: e,
-                isGrid: true,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => EventDetailsScreen(event: e)),
-                ),
-              );
-            },
           );
         }
-        return const SizedBox.shrink();
+        return const SliverToBoxAdapter(child: SizedBox.shrink());
       },
     );
   }
@@ -257,7 +566,7 @@ class _EmptyState extends StatelessWidget {
             ),
             SizedBox(height: 4.r),
             const Text(
-              'Try a different filter — or post the event yourself.',
+              'Try a different filter, or post the event yourself.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.muted),
             ),

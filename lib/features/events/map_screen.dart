@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
@@ -186,7 +187,6 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-          _iconButton(context, Icons.view_list_rounded, onTap: () => Navigator.pop(context)),
         ],
       ),
     );
@@ -203,7 +203,16 @@ class _Header extends StatelessWidget {
           border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(Corners.md),
         ),
-        child: Icon(icon, color: AppColors.paper, size: 20.r),
+        child: icon == Icons.arrow_back_rounded
+            ? Center(
+                child: SvgPicture.asset(
+                  'assets/icons/arrow-left.svg',
+                  width: 20.r,
+                  height: 20.r,
+                  colorFilter: const ColorFilter.mode(AppColors.paper, BlendMode.srcIn),
+                ),
+              )
+            : Icon(icon, color: AppColors.paper, size: 20.r),
       ),
     );
   }
@@ -465,12 +474,10 @@ class _EventSheet extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: Insets.lg),
             child: PrimaryButton(
               label: 'View event',
-              icon: Icons.arrow_forward_rounded,
               expand: true,
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
+                Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(builder: (_) => EventDetailsScreen(event: event)),
                 );
               },

@@ -1,0 +1,27 @@
+app:
+  android:
+    flavorDimensions: "flavor-type"
+  ios:
+    buildSettings:
+      ENABLE_BITCODE: NO
+
+flavors:
+  dev:
+    app:
+      name: "Hatri Dev"
+
+    android:
+      applicationId: "com.hatri.dev"
+
+    ios:
+      bundleId: "com.hatri.dev"
+
+  prod:
+    app:
+      name: "Hatri"
+
+    android:
+      applicationId: "com.hatri.app"
+
+    ios:
+      bundleId: "com.hatri.app"

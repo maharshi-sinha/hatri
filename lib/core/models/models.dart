@@ -79,6 +79,9 @@ class Event {
   // Lightweight attendee sample for "who's going"
   final List<Attendee> attendees;
 
+  // Rupee price (paid events). null → falls back to isFree/paid label.
+  final int? priceRupees;
+
   Event({
     required this.id,
     required this.title,
@@ -104,7 +107,15 @@ class Event {
     this.isSafeVenue = false,
     this.lineup = const [],
     this.attendees = const [],
+    this.priceRupees,
   });
+
+  /// Label used in bottom CTA — "FREE", "₹250", or "PAID" fallback.
+  String get priceLabel {
+    if (isFree) return 'FREE';
+    if (priceRupees != null) return '₹$priceRupees';
+    return 'PAID';
+  }
 }
 
 enum CommunityType { neighborhood, college, interest, creator }
@@ -138,6 +149,9 @@ extension CommunityTypeX on CommunityType {
   }
 }
 
+/// A community's lifecycle stage. Dormant = seed placeholder waiting for a host.
+enum CommunityStatus { active, dormant }
+
 class Community {
   final String id;
   final String name;
@@ -149,10 +163,38 @@ class Community {
 
   // v2 fields (meetup-first taxonomy)
   final CommunityType type;
-  final String? hostId;         // links to CreatorProfile
+  final String? hostId;         // primary host — links to CreatorProfile
+  final List<String> coHostIds; // co-hosts — up to 3
   final String? nextEventId;    // links to Event
-  final String? location;       // "Civil Lines", "NIT Raipur", etc.
+  final String? location;
   final List<Attendee> memberAvatars;
+
+  // ─── Scene model (Community v3) ───────────────────────────────────────
+  final HostedWeekly? hostedWeekly;          // the anchor "we meet Sundays at 6"
+  final List<String> upcomingEventIds;       // events tied to this community
+  final List<WallPhoto> wallPhotos;          // memory wall (auto-populated)
+  final CommunityDrop? weeklyDrop;           // host's editorial note this week
+  final bool chatterEnabled;                 // host toggles the light chat on/off
+  final List<ChatterMessage> chatter;        // rolling stream, auto-purge 7d
+
+  // ─── Vibe check — 3 quick tags describing personality ────────────────
+  final List<String> vibeTags;               // e.g. ["🌅 morning people", "☕ chai first"]
+
+  // ─── First-timer guide — kills solo-attend anxiety ───────────────────
+  final FirstTimerGuide? firstTimerGuide;
+
+  // ─── Member vibes — one-liner testimonials, Airbnb-style ─────────────
+  final List<MemberVibe> memberVibes;
+
+  // ─── Scene stats — proof of aliveness ────────────────────────────────
+  final int eventsThisMonth;                 // "12 events this month"
+  final double? rating;                      // 4.8
+  final int reviewCount;                     // 146
+  final int newMembersThisWeek;              // "↑ 8 new this week"
+
+  // ─── Dormant scenes (cold-start) ──────────────────────────────────────
+  final CommunityStatus status;              // active OR dormant
+  final int interestedCount;                 // how many users have signalled interest (dormant only)
 
   Community({
     required this.id,
@@ -164,9 +206,140 @@ class Community {
     this.colorHex = '#FF2E9A',
     this.type = CommunityType.interest,
     this.hostId,
+    this.coHostIds = const [],
     this.nextEventId,
     this.location,
     this.memberAvatars = const [],
+    this.hostedWeekly,
+    this.upcomingEventIds = const [],
+    this.wallPhotos = const [],
+    this.weeklyDrop,
+    this.chatterEnabled = false,
+    this.chatter = const [],
+    this.vibeTags = const [],
+    this.firstTimerGuide,
+    this.memberVibes = const [],
+    this.eventsThisMonth = 0,
+    this.rating,
+    this.reviewCount = 0,
+    this.newMembersThisWeek = 0,
+    this.status = CommunityStatus.active,
+    this.interestedCount = 0,
+  });
+
+  bool get isDormant => status == CommunityStatus.dormant;
+}
+
+/// First-timer guide — what to expect, what to bring, solo-friendly signal.
+/// Reduces the "am I going to feel weird walking in alone?" barrier.
+class FirstTimerGuide {
+  final List<String> whatToExpect;    // 3-5 short bullets
+  final String dressVibe;              // "casual · whatever you want"
+  final List<String> whatToBring;      // ["water bottle", "camera if you have"]
+  final bool soloFriendly;             // yes/no explicit
+  final int soloLastTime;              // "7 people came solo last week"
+
+  const FirstTimerGuide({
+    required this.whatToExpect,
+    this.dressVibe = 'casual · whatever you want',
+    this.whatToBring = const [],
+    this.soloFriendly = true,
+    this.soloLastTime = 0,
+  });
+}
+
+/// One-line member testimonial for the scene page. Airbnb-review meets BeReal.
+class MemberVibe {
+  final String quote;
+  final String byName;
+  final String? byAvatarUrl;
+  const MemberVibe({
+    required this.quote,
+    required this.byName,
+    this.byAvatarUrl,
+  });
+}
+
+/// The community's signature recurring event — the "we meet on X" anchor.
+class HostedWeekly {
+  final String dayLabel;   // "SUNDAYS", "FRIDAY NIGHTS", "1ST SUNDAY OF MONTH"
+  final String timeLabel;  // "6:00 AM", "9:00 PM"
+  final String venueLabel; // "MARINE DRIVE, TELIBANDHA"
+  final String description;// short line, "morning run + chai after"
+  final String? nextInstanceEventId; // event id for THIS coming instance
+
+  const HostedWeekly({
+    required this.dayLabel,
+    required this.timeLabel,
+    required this.venueLabel,
+    this.description = '',
+    this.nextInstanceEventId,
+  });
+}
+
+/// A photo shown on a community's Memory Wall.
+/// Sourced from post-event moments (BeReal-style drops) or host uploads.
+class WallPhoto {
+  final String id;
+  final String photoUrl;
+  final DateTime attendedAt;
+  final String eventTitle;      // "Sunday Run · Aug 17"
+  final String byUserName;      // "Ravi"
+  final String? byUserAvatarUrl;
+  final String? caption;         // "golden hour hit different"
+  final int likes;               // 12
+  final bool youAreIn;           // for the "just you" filter — mock
+
+  const WallPhoto({
+    required this.id,
+    required this.photoUrl,
+    required this.attendedAt,
+    required this.eventTitle,
+    required this.byUserName,
+    this.byUserAvatarUrl,
+    this.caption,
+    this.likes = 0,
+    this.youAreIn = false,
+  });
+}
+
+/// A single message in a community's rolling chatter stream.
+class ChatterMessage {
+  final String id;
+  final String byUserName;
+  final String? byUserAvatarUrl;
+  final String text;
+  final DateTime at;
+  final bool isMe;
+
+  const ChatterMessage({
+    required this.id,
+    required this.byUserName,
+    required this.text,
+    required this.at,
+    this.byUserAvatarUrl,
+    this.isMe = false,
+  });
+}
+
+/// A host-published weekly editorial note. One per community per week.
+class CommunityDrop {
+  final String id;
+  final String hostName;
+  final String? hostAvatarUrl;
+  final DateTime publishedAt;
+  final String headline;            // "THIS WEEK: PURANI BASTI @ GOLDEN HOUR"
+  final String body;                // 1-3 short sentences
+  final List<String> linkedEventIds;
+
+  const CommunityDrop({
+    required this.id,
+    required this.hostName,
+    required this.publishedAt,
+    required this.headline,
+    required this.body,
+    this.hostAvatarUrl,
+    this.linkedEventIds = const [],
   });
 }
 
@@ -174,24 +347,6 @@ class Community {
 class AppCommunities {
   AppCommunities._();
   static final Set<String> joinedIds = <String>{};
-}
-
-class Post {
-  final String id;
-  final String communityId;
-  final String authorName;
-  final String content;
-  final String timeAgo;
-  final int likesCount;
-
-  Post({
-    required this.id,
-    required this.communityId,
-    required this.authorName,
-    required this.content,
-    required this.timeAgo,
-    required this.likesCount,
-  });
 }
 
 class User {

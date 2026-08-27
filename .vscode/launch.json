@@ -1,0 +1,75 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Hatri Dev",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--flavor",
+        "dev",
+        "--dart-define=appFlavor=dev"
+      ]
+    },
+    {
+      "name": "Hatri Dev (Profile)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "profile",
+      "args": [
+        "--flavor",
+        "dev",
+        "--dart-define=appFlavor=dev"
+      ]
+    },
+    {
+      "name": "Hatri Dev (Release)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "release",
+      "args": [
+        "--flavor",
+        "dev",
+        "--dart-define=appFlavor=dev"
+      ]
+    },
+    {
+      "name": "Hatri Prod",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--flavor",
+        "prod",
+        "--dart-define=appFlavor=prod"
+      ]
+    },
+    {
+      "name": "Hatri Prod (Profile)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "profile",
+      "args": [
+        "--flavor",
+        "prod",
+        "--dart-define=appFlavor=prod"
+      ]
+    },
+    {
+      "name": "Hatri Prod (Release)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "release",
+      "args": [
+        "--flavor",
+        "prod",
+        "--dart-define=appFlavor=prod"
+      ]
+    }
+  ]
+}

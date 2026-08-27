@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/blinking_dot.dart';
-import 'dart:ui';
-import '../../core/responsive/responsive.dart';
+import 'package:video_player/video_player.dart';
 
+import '../../core/theme/app_theme.dart';
+
+/// Splash — plays an intro video with sound, no controls, then routes
+/// to /welcome when the clip ends (or after a safety timeout / on error).
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -13,105 +16,72 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  late VideoPlayerController _controller;
+  bool _navigated = false;
+  bool _ready = false;
+  Timer? _safety;
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        context.go('/auth');
-      }
+    _controller = VideoPlayerController.asset('assets/video/splash.mp4')
+      ..setVolume(1.0)
+      ..setLooping(false);
+
+    _controller.initialize().then((_) {
+      if (!mounted) return;
+      setState(() => _ready = true);
+      _controller.play();
+      _controller.addListener(_onTick);
+    }).catchError((_) {
+      // If the video fails to load, don't get stuck — go straight to welcome.
+      _goNext();
     });
+
+    // Safety net: navigate no later than 8s regardless of video state.
+    _safety = Timer(const Duration(seconds: 8), _goNext);
+  }
+
+  void _onTick() {
+    final v = _controller.value;
+    if (!v.isInitialized) return;
+    // When the clip finishes, or as it hits the last frame, move on.
+    if (v.position >= v.duration && v.duration > Duration.zero) {
+      _goNext();
+    }
+  }
+
+  void _goNext() {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    _safety?.cancel();
+    context.go('/welcome');
+  }
+
+  @override
+  void dispose() {
+    _safety?.cancel();
+    _controller.removeListener(_onTick);
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        context.go('/auth');
-      },
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: Stack(
-          children: [
-            // Background Glows
-            Positioned.fill(
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: MediaQuery.of(context).size.height * 0.2,
-                    left: MediaQuery.of(context).size.width * 0.1,
-                    child: Container(
-                      width: 300.r,
-                      height: 300.r,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color.fromRGBO(255, 45, 141, 0.18),
-                      ),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
-                        child: Container(color: Colors.transparent),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: MediaQuery.of(context).size.height * 0.6,
-                    left: MediaQuery.of(context).size.width * 0.4,
-                    child: Container(
-                      width: 250.r,
-                      height: 250.r,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color.fromRGBO(163, 255, 18, 0.1),
-                      ),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                        child: Container(color: Colors.transparent),
-                      ),
-                    ),
-                  ),
-                ],
+    return Scaffold(
+      backgroundColor: AppColors.ground,
+      body: _ready
+          ? SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _controller.value.size.width,
+                  height: _controller.value.size.height,
+                  child: VideoPlayer(_controller),
+                ),
               ),
-            ),
-            // Content
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'HATRI',
-                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      fontSize: 100.sp,
-                      color: AppColors.primaryText,
-                      letterSpacing: -2.0.sp,
-                      height: 0.85,
-                    ),
-                  ),
-                  SizedBox(height: 18.r),
-                  Text(
-                    'YOUR CITY. YOUR SCENE.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.secondaryText,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 3.0.sp,
-                    ),
-                  ),
-                  SizedBox(height: 44.r),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const BlinkingDot(color: AppColors.accentPink),
-                      SizedBox(width: 8.r),
-                      const BlinkingDot(color: AppColors.accentGreen),
-                      SizedBox(width: 8.r),
-                      const BlinkingDot(color: AppColors.accentBlue),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/models.dart';
+import '../../shared/design/motifs.dart';
 import 'dart:ui' as ui;
 import 'dart:io';
 import 'dart:typed_data';
@@ -245,84 +246,203 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
   }
 
   Widget _buildPrinterMachine() {
-    // The printer housing frames the ticket, so it tracks the same width.
+    // Light-theme printer housing — an off-white "device" sitting on the dark
+    // app ground. When the dark ticket prints out of the slit it contrasts
+    // hard against the paper body so there's no colour clash.
+    const printerBody = Color(0xFFF5F3ED);       // warm off-white plastic
+    const printerBorder = Color(0xFFDCDACD);     // subtle bezel line
+    const printerInk = Color(0xFF1C1C1C);        // dark headings on paper
+    const printerMuted = Color(0xFF87847A);      // muted labels
+    const printerDivider = Color(0xFFE0DED2);
+    const printerRaised = Color(0xFFECE9DE);     // preview card fill
     final width = math.min(360.r, MediaQuery.sizeOf(context).width - Insets.md * 2);
     return Container(
       width: width,
       height: width * (560 / 360),
-      padding: EdgeInsets.all(24.r),
+      padding: EdgeInsets.fromLTRB(20.r, 18.r, 20.r, 24.r),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA), // Off-white realistic plastic
-        borderRadius: BorderRadius.circular(32.r),
+        color: printerBody,
+        borderRadius: BorderRadius.circular(28.r),
+        border: Border.all(color: printerBorder, width: 1.2),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 40.r, offset: Offset(0, 20.r)),
-          BoxShadow(color: Colors.white, blurRadius: 2.r), // inner specular highlight
-        ]
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.55),
+            blurRadius: 44.r,
+            offset: Offset(0, 22.r),
+          ),
+          // Inner specular highlight sim (a hair of white on top)
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.6),
+            blurRadius: 1.r,
+            offset: const Offset(0, 0),
+          ),
+        ],
       ),
       child: Stack(
         children: [
-          // Status LED
+          // Top strip — LED + READY on the left, HATRI PRINTER wordmark right.
           Positioned(
-            top: 6.r, left: 6.r,
-            child: AnimatedBuilder(
-              animation: _idleController,
-              builder: (context, child) {
-                // If finished: Solid green. If printing: Fast orange blink. If idle: Slow green breathe.
-                double opacity = 1.0;
-                Color ledColor = Colors.greenAccent;
-                
-                if (_isFinished) {
-                  opacity = 1.0;
-                  ledColor = Colors.greenAccent;
-                } else if (_isPrinting) {
-                  opacity = (math.sin(_idleController.value * math.pi * 8) + 1.0) / 2.0; // Fast blink
-                  ledColor = Colors.orangeAccent;
-                } else {
-                  opacity = (math.sin(_idleController.value * math.pi * 2) + 1.0) / 2.0;
-                  opacity = 0.3 + (opacity * 0.7); // 0.3 to 1.0 slow breathe
-                  ledColor = Colors.greenAccent;
-                }
-
-                return Container(
-                  width: 12.r, height: 12.r,
-                  decoration: BoxDecoration(
-                    color: ledColor.withOpacity(opacity),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(color: ledColor.withOpacity(opacity), blurRadius: 8.r)
-                    ]
+            top: 0, left: 0, right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedBuilder(
+                      animation: _idleController,
+                      builder: (context, child) {
+                        double opacity;
+                        Color ledColor;
+                        if (_isFinished) {
+                          opacity = 1.0;
+                          ledColor = const Color(0xFF34C759);
+                        } else if (_isPrinting) {
+                          opacity = (math.sin(_idleController.value * math.pi * 8) + 1.0) / 2.0;
+                          ledColor = const Color(0xFFFF9500);
+                        } else {
+                          final t = (math.sin(_idleController.value * math.pi * 2) + 1.0) / 2.0;
+                          opacity = 0.35 + (t * 0.65);
+                          ledColor = const Color(0xFF34C759);
+                        }
+                        return Container(
+                          width: 10.r, height: 10.r,
+                          decoration: BoxDecoration(
+                            color: ledColor.withValues(alpha: opacity),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: ledColor.withValues(alpha: opacity * 0.7),
+                                blurRadius: 10.r,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    SizedBox(width: 8.r),
+                    Text(
+                      _isFinished ? 'DONE' : _isPrinting ? 'PRINTING' : 'READY',
+                      style: TextStyle(
+                        fontFamily: 'GeneralSans',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10.sp,
+                        letterSpacing: 1.6.sp,
+                        color: printerMuted,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  'HATRI PRINTER',
+                  style: TextStyle(
+                    fontFamily: 'ClashDisplay',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.sp,
+                    letterSpacing: 0.6.sp,
+                    color: printerInk,
                   ),
-                );
-              }
+                ),
+              ],
             ),
           ),
-          // Branding
+          // Serial line
           Positioned(
-            top: 0, right: 6.r,
+            top: 22.r, right: 0,
             child: Text(
-              "hatri\nprinter", 
-              textAlign: TextAlign.right, 
-              style: TextStyle(color: Colors.black26, fontWeight: FontWeight.w900, fontSize: 16.sp, height: 1.0)
+              'HAT-2026 · v1.0',
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w600,
+                fontSize: 9.sp,
+                letterSpacing: 0.6.sp,
+                color: printerMuted,
+              ),
             ),
           ),
-          // The Dispenser Slit
+          // Divider under the header strip
           Positioned(
-            top: 80.r, left: 10.r, right: 10.r,
+            top: 46.r, left: 0, right: 0,
+            child: Container(height: 1, color: printerDivider),
+          ),
+          // The Dispenser Slit — dark inset, reads as a real thermal exit.
+          Positioned(
+            top: 72.r, left: 8.r, right: 8.r,
             child: Container(
-              height: 8.r,
+              height: 10.r,
               decoration: BoxDecoration(
                 color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(4.r),
+                borderRadius: BorderRadius.circular(5.r),
                 boxShadow: [
-                  BoxShadow(color: Colors.white.withOpacity(0.8), blurRadius: 1.r, offset: Offset(0, 1.r)),
-                  BoxShadow(color: Colors.black87, blurRadius: 4.r, offset: Offset(0, 2.r)),
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    blurRadius: 1.r,
+                    offset: Offset(0, 1.r),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.85),
+                    blurRadius: 3.r,
+                    offset: Offset(0, 2.r),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Ticket preview strip — small mono card showing what's about to print.
+          Positioned(
+            top: 108.r, left: 0, right: 0,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 14.r, vertical: 12.r),
+              decoration: BoxDecoration(
+                color: printerRaised,
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(color: printerBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'NEXT UP',
+                    style: TextStyle(
+                      fontFamily: 'GeneralSans',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 9.sp,
+                      letterSpacing: 1.6.sp,
+                      color: printerMuted,
+                    ),
+                  ),
+                  SizedBox(height: 6.r),
+                  Text(
+                    widget.event.title.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'ClashDisplay',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15.sp,
+                      letterSpacing: -0.2.sp,
+                      color: printerInk,
+                    ),
+                  ),
+                  SizedBox(height: 4.r),
+                  Text(
+                    '${DateFormat('EEE, MMM d').format(widget.event.date).toUpperCase()} · ${widget.event.time}',
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10.sp,
+                      letterSpacing: 0.8.sp,
+                      color: printerMuted,
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
           // Massive Tactile Button
           Positioned(
-            bottom: 40.r, left: 0, right: 0,
+            bottom: 24.r, left: 0, right: 0,
             child: Column(
               children: [
                 GestureDetector(
@@ -341,42 +461,56 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // The Ripple Effect
+                          // Idle pulsing ring (expands + fades)
                           if (!_isPrinting && !_isFinished)
                             AnimatedBuilder(
                               animation: _idleController,
                               builder: (context, child) {
                                 return Transform.scale(
-                                  scale: 1.0 + (_idleController.value * 0.4), // Expands outwards
+                                  scale: 1.0 + (_idleController.value * 0.45),
                                   child: Opacity(
-                                    opacity: 1.0 - _idleController.value, // Fades out
+                                    opacity: 1.0 - _idleController.value,
                                     child: Container(
                                       width: 130.r, height: 130.r,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: const Color(0xFFE94B8C), width: 4.r),
+                                        border: Border.all(color: AppColors.fuchsia, width: 3.r),
                                       ),
                                     ),
                                   ),
                                 );
-                              }
+                              },
                             ),
+                          // Soft halo behind button
+                          Container(
+                            width: 150.r, height: 150.r,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  AppColors.fuchsia.withValues(alpha: 0.35),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
                           // The Solid Button
                           Container(
-                            width: 130.r, height: 130.r,
+                            width: 128.r, height: 128.r,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE94B8C), // Vibrant Pink
+                              color: AppColors.fuchsia,
                               shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.paper, width: 3),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFE94B8C).withOpacity(0.4), 
-                                  blurRadius: _isButtonDown ? 10 : 20, 
-                                  offset: Offset(0, _isButtonDown ? 5 : 10)
-                                )
-                              ]
+                                  color: AppColors.fuchsia.withValues(alpha: 0.45),
+                                  blurRadius: _isButtonDown ? 12 : 24,
+                                  offset: Offset(0, _isButtonDown ? 4 : 10),
+                                ),
+                              ],
                             ),
                             child: Center(
-                              child: Icon(Icons.touch_app, color: Colors.white, size: 50.r),
+                              child: Icon(Icons.touch_app_rounded, color: AppColors.paper, size: 52.r),
                             ),
                           ),
                         ],
@@ -384,17 +518,41 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
                     ),
                   ),
                 ),
-                SizedBox(height: 24.r),
+                SizedBox(height: 16.r),
                 AnimatedOpacity(
                   opacity: _isFinished || _isPrinting ? 0.0 : 1.0,
                   duration: const Duration(milliseconds: 300),
-                  child: Text("TAP TO CLAIM", style: TextStyle(color: Color(0xFFE94B8C), fontWeight: FontWeight.bold, letterSpacing: 2.0.sp)),
-                )
-              ]
-            )
-          )
-        ]
-      )
+                  child: Column(
+                    children: [
+                      Text(
+                        'TAP TO CLAIM',
+                        style: TextStyle(
+                          fontFamily: 'GeneralSans',
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.sp,
+                          letterSpacing: 2.0.sp,
+                          color: AppColors.paper,
+                        ),
+                      ),
+                      SizedBox(height: 4.r),
+                      Text(
+                        '1 TICKET WAITING',
+                        style: TextStyle(
+                          fontFamily: 'GeneralSans',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10.sp,
+                          letterSpacing: 1.6.sp,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -430,6 +588,28 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
             return Stack(
               alignment: Alignment.center,
               children: [
+                // Halftone industrial wash — faded further as event glow rises.
+                Positioned.fill(
+                  child: Opacity(
+                    opacity: 0.08 * (1.0 - detachProgress),
+                    child: HalftoneBackground(
+                      dotColor: AppColors.paper,
+                      spacing: 16.r,
+                      dotSize: 2.4,
+                    ),
+                  ),
+                ),
+                // Corner starbursts for brand consistency
+                if (!_isFinished) ...[
+                  Positioned(
+                    top: 90.r, right: 28.r,
+                    child: Starburst(size: 30.r, color: AppColors.fuchsia.withValues(alpha: 0.4), points: 8),
+                  ),
+                  Positioned(
+                    bottom: 140.r, left: 30.r,
+                    child: Starburst(size: 22.r, color: AppColors.lime.withValues(alpha: 0.35), points: 6),
+                  ),
+                ],
                 // Ambient Background Glow (Grows when detached)
                 Positioned.fill(
                   child: Opacity(

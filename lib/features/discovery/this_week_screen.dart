@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/di/injection_container.dart';
@@ -200,7 +201,7 @@ class _ThisWeekScreenState extends State<ThisWeekScreen> {
       children: [
         Row(
           children: [
-            _iconChip(Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
+            _backChip(onTap: () => Navigator.pop(context)),
             const Spacer(),
             Starburst(size: 28.r, color: AppColors.fuchsia, points: 8),
             SizedBox(width: 6.r),
@@ -252,6 +253,28 @@ class _ThisWeekScreenState extends State<ThisWeekScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _backChip({required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40.r,
+        height: 40.r,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceRaised,
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(Corners.md),
+        ),
+        child: SvgPicture.asset(
+          'assets/icons/arrow-left.svg',
+          width: 20.r,
+          height: 20.r,
+          colorFilter: const ColorFilter.mode(AppColors.paper, BlendMode.srcIn),
+        ),
+      ),
     );
   }
 
@@ -337,8 +360,7 @@ class _ThisWeekScreenState extends State<ThisWeekScreen> {
     final onAccent = accent.computeLuminance() > 0.55 ? AppColors.onNeon : AppColors.paper;
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
+      onTap: () => Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => EventDetailsScreen(event: event)),
       ),
       child: StickerShadow(
@@ -514,7 +536,7 @@ class _ThisWeekScreenState extends State<ThisWeekScreen> {
               borderRadius: BorderRadius.circular(Corners.md),
             ),
             child: Text(
-              'Nothing today — chill 🌙',
+              'empty vibes today 🌙',
               style: TextStyle(color: AppColors.muted, fontSize: 13.sp),
             ),
           )
@@ -524,8 +546,7 @@ class _ThisWeekScreenState extends State<ThisWeekScreen> {
                 child: SmallEventCard(
                   event: e,
                   isGrid: true,
-                  onTap: () => Navigator.push(
-                    context,
+                  onTap: () => Navigator.of(context, rootNavigator: true).push(
                     MaterialPageRoute(builder: (_) => EventDetailsScreen(event: e)),
                   ),
                 ),

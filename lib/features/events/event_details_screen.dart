@@ -30,17 +30,36 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   bool _isSaved = false;
   bool _isRsvpd = false;
 
-  List<CreatorProfile> _lineup = [];
-  bool _loadingLineup = false;
+  bool _loadingOrganizer = true;
   CreatorProfile? _organizer;
+
+  final ScrollController _scrollController = ScrollController();
+  double _collapsedTitleOpacity = 0;
 
   Event get event => widget.event;
 
   @override
   void initState() {
     super.initState();
-    _loadLineup();
     _loadOrganizer();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Title fades in fully by the time the cover is 70% scrolled out.
+    const start = 180.0;
+    const end = 260.0;
+    final o = ((_scrollController.offset - start) / (end - start)).clamp(0.0, 1.0);
+    if ((o - _collapsedTitleOpacity).abs() > 0.02) {
+      setState(() => _collapsedTitleOpacity = o);
+    }
   }
 
   Future<void> _loadOrganizer() async {
@@ -49,18 +68,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     final o = await repo.getById(event.organizerId!);
     if (!mounted) return;
     setState(() => _organizer = o);
-  }
-
-  Future<void> _loadLineup() async {
-    if (event.lineup.isEmpty) return;
-    setState(() => _loadingLineup = true);
-    final repo = sl<CreatorRepository>();
-    final all = await Future.wait(event.lineup.map(repo.getById));
-    if (!mounted) return;
-    setState(() {
-      _lineup = all.whereType<CreatorProfile>().toList();
-      _loadingLineup = false;
-    });
   }
 
   void _openStartPlan() {
@@ -83,8 +90,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       return;
     }
     setState(() => _isRsvpd = true);
-    await Navigator.push(
-      context,
+    await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (_) => TicketRevealScreen(event: event),
       ),
@@ -150,35 +156,104 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       body: Stack(
         children: [
           CustomScrollView(
+            controller: _scrollController,
             slivers: [
               _buildHero(eventColor, onEvent),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(Insets.lg, Insets.lg, Insets.lg, 120.r),
+                  padding: EdgeInsets.fromLTRB(Insets.lg, Insets.lg, Insets.lg, 160.r),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTrustStrip(),
                       _buildInfoPills(),
                       SizedBox(height: 12.r),
                       _buildVenueRow(eventColor),
-                      SizedBox(height: 20.r),
+                      SizedBox(height: 16.r),
+                      _buildTrustStrip(),
                       const _HatriDivider(),
                       SizedBox(height: 20.r),
                       _buildOrganizerRow(eventColor),
                       SizedBox(height: 20.r),
                       _buildDescription(),
-                      if (_lineup.isNotEmpty || _loadingLineup) ...[
-                        SizedBox(height: 24.r),
-                        _buildLineup(eventColor),
-                      ],
                       SizedBox(height: 24.r),
                       _buildWhosGoing(eventColor),
+                      SizedBox(height: 24.r),
+                      _buildQuickFacts(eventColor),
+                      SizedBox(height: 20.r),
+                      _buildQueriesCard(eventColor),
+                      SizedBox(height: 20.r),
+                      _buildTerms(),
                     ],
                   ),
                 ),
               ),
             ],
+          ),
+          // Collapsed-header title strip — fades in as cover scrolls out.
+          // Sits BEHIND the icon chip row so those stay tappable, and gets a
+          // solid ground bg so text-on-content doesn't muddy up.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: _collapsedTitleOpacity,
+                child: Container(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 20.r,
+                    bottom: 24.r,
+                    left: 76.r,
+                    right: 124.r,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.ground,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: AppColors.border.withValues(alpha: _collapsedTitleOpacity),
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    event.title.toUpperCase(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'ClashDisplay',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14.sp,
+                      height: 1.2,
+                      letterSpacing: -0.2.sp,
+                      color: AppColors.paper,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Header — back/share/bookmark chips sit on top of everything.
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10.r,
+            left: Insets.lg,
+            right: Insets.lg,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _svgChip('assets/icons/arrow-left.svg', onTap: () => Navigator.pop(context)),
+                Row(
+                  children: [
+                    _svgChip('assets/icons/Upload.svg', onTap: _openShare),
+                    SizedBox(width: 8.r),
+                    _svgChip(
+                      'assets/icons/Bookmark.svg',
+                      onTap: _toggleSaved,
+                      activeColor: _isSaved ? AppColors.lime : null,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           _buildBottomCta(eventColor, onEvent),
         ],
@@ -191,11 +266,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   SliverAppBar _buildHero(Color eventColor, Color onEvent) {
     return SliverAppBar(
       expandedHeight: 320,
-      pinned: false,
+      pinned: true,                     // toolbar stays after collapse
+      stretch: true,
       backgroundColor: AppColors.ground,
+      surfaceTintColor: AppColors.ground,
       elevation: 0,
       automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
+        stretchModes: const [StretchMode.zoomBackground],
         background: Stack(
           fit: StackFit.expand,
           children: [
@@ -236,32 +314,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ),
               ),
             ),
-            // Top-left/right icon buttons + top stickers
+            // Corner sticker overlays — sit well below the pinned header row
+            // so they never collide with back/share/bookmark on any scroll offset.
             Positioned(
-              top: MediaQuery.of(context).padding.top + 8,
-              left: Insets.lg,
-              right: Insets.lg,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _iconChip(Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
-                  Row(
-                    children: [
-                      _svgChip('assets/icons/Upload.svg', onTap: _openShare),
-                      SizedBox(width: 8.r),
-                      _svgChip(
-                        'assets/icons/Bookmark.svg',
-                        onTap: _toggleSaved,
-                        activeColor: _isSaved ? AppColors.lime : null,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // Corner sticker overlays
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 56,
+              top: MediaQuery.of(context).padding.top + 100.r,
               left: Insets.lg,
               child: Row(
                 children: [
@@ -343,12 +399,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40.r,
-        height: 40.r,
+        width: 42.r,
+        height: 42.r,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.ground.withValues(alpha: 0.65),
-          border: Border.all(color: AppColors.border),
+          color: AppColors.ground.withValues(alpha: 0.85),
+          border: Border.all(color: AppColors.paper.withValues(alpha: 0.08)),
           borderRadius: BorderRadius.circular(Corners.md),
         ),
         child: child,
@@ -363,44 +419,34 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget _buildTrustStrip() {
     final chips = <Widget>[];
     if (_organizer?.isVerified == true) {
-      chips.add(
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 4.r),
-          decoration: BoxDecoration(
-            color: AppColors.fuchsia.withValues(alpha: 0.15),
-            border: Border.all(color: AppColors.fuchsia.withValues(alpha: 0.4)),
-            borderRadius: BorderRadius.circular(Corners.pill),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              VerifiedBadge(size: 12.r),
-              SizedBox(width: 4.r),
-              Text(
-                'VERIFIED ORGANIZER',
-                style: TextStyle(
-                  fontFamily: 'GeneralSans',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 9.sp,
-                  letterSpacing: 1.2.sp,
-                  color: AppColors.fuchsia,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      chips.add(_TrustChip(
+        icon: Icons.verified_rounded,
+        color: AppColors.fuchsia,
+        label: 'VERIFIED',
+      ));
     }
     if ((_organizer?.rating ?? 0) > 0) {
-      chips.add(StarRating(rating: _organizer!.rating, size: 12.r));
+      chips.add(_TrustChip(
+        icon: Icons.star_rounded,
+        color: AppColors.lime,
+        label: '${_organizer!.rating.toStringAsFixed(1)} · ${_organizer!.followerCount} FOLLOW',
+      ));
     }
     if (event.isSafeVenue) {
-      chips.add(const SafeVenueChip());
+      chips.add(_TrustChip(
+        svgPath: 'assets/icons/Shield.svg',
+        color: AppColors.indigo,
+        label: 'SAFE VENUE',
+      ));
     }
     if (chips.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: EdgeInsets.only(bottom: 12.r),
-      child: Wrap(spacing: 6.r, runSpacing: 6.r, children: chips),
+      padding: EdgeInsets.only(bottom: 20.r),
+      child: Wrap(
+        spacing: 8.r,
+        runSpacing: 8.r,
+        children: chips,
+      ),
     );
   }
 
@@ -447,12 +493,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         children: [
           SvgPicture.asset(
             svgIcon,
-            width: 14.r,
-            height: 14.r,
+            width: 18.r,
+            height: 18.r,
             colorFilter:
                 ColorFilter.mode(highlight ?? AppColors.muted, BlendMode.srcIn),
           ),
-          SizedBox(width: 6.r),
+          SizedBox(width: 8.r),
           Flexible(
             child: Text(
               label,
@@ -574,36 +620,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     ),
                     if (hasProfile) ...[
                       SizedBox(width: 4.r),
-                      Icon(Icons.chevron_right_rounded,
-                          size: 18.r, color: AppColors.muted),
+                      SvgPicture.asset(
+                        'assets/icons/arrow-right.svg',
+                        width: 18.r,
+                        height: 18.r,
+                        colorFilter: const ColorFilter.mode(AppColors.muted, BlendMode.srcIn),
+                      ),
                     ],
                   ],
                 ),
               ],
             ),
           ),
-          if (hasProfile)
-            GestureDetector(
-              onTap: _openOrganizerProfile,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 7.r),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceRaised,
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(Corners.pill),
-                ),
-                child: Text(
-                  'VIEW',
-                  style: TextStyle(
-                    fontFamily: 'GeneralSans',
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11.sp,
-                    letterSpacing: 1.0.sp,
-                    color: AppColors.paper,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -629,54 +657,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  // ---------------- LINEUP ----------------
 
-  Widget _buildLineup(Color eventColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            StickerLabel(
-              text: '🎤 LINEUP',
-              background: eventColor,
-              foreground: eventColor.computeLuminance() > 0.55
-                  ? AppColors.onNeon
-                  : AppColors.paper,
-            ),
-            SizedBox(width: 8.r),
-            Text(
-              '${_lineup.length} PERFORMING',
-              style: TextStyle(
-                fontFamily: 'GeneralSans',
-                fontWeight: FontWeight.w700,
-                fontSize: 10.sp,
-                letterSpacing: 1.2.sp,
-                color: AppColors.muted,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 10.r),
-        SizedBox(
-          height: 88.r,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _lineup.length,
-            separatorBuilder: (_, i) => SizedBox(width: 10.r),
-            itemBuilder: (context, i) {
-              final c = _lineup[i];
-              return GestureDetector(
-                onTap: () => _openCreatorProfile(c),
-                behavior: HitTestBehavior.opaque,
-                child: _PerformerChip(creator: c),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
 
   // ---------------- WHO'S GOING ----------------
 
@@ -684,7 +665,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     final attendees = event.attendees;
     final count = event.rsvpCount + (_isRsvpd ? 1 : 0);
     return Container(
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.fromLTRB(14.r, 14.r, 14.r, 18.r),
       decoration: BoxDecoration(
         color: AppColors.graphite,
         border: Border.all(color: AppColors.border),
@@ -801,50 +782,637 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         ),
       );
 
+  // ---------------- QUICK FACTS (2-col info cards) ----------------
+
+  Widget _buildQuickFacts(Color eventColor) {
+    // Derive sensible defaults from category if the event doesn't have data.
+    final language = 'HINDI · ENGLISH';
+    final duration = _durationFromCategory(event.category);
+    final age = _ageFromCategory(event.category);
+    final layout = event.isSafeVenue ? 'INDOOR · SAFE VENUE' : 'INDOOR';
+    final type = event.category.label.toUpperCase();
+
+    final tiles = [
+      _FactTile(icon: Icons.access_time_rounded, label: 'DURATION', value: duration, accent: eventColor),
+      _FactTile(icon: Icons.language_rounded, label: 'LANGUAGE', value: language, accent: eventColor),
+      _FactTile(icon: Icons.person_outline_rounded, label: 'AGE', value: age, accent: eventColor),
+      _FactTile(icon: Icons.location_city_rounded, label: 'LAYOUT', value: layout, accent: eventColor),
+      _FactTile(icon: Icons.local_activity_rounded, label: 'TYPE', value: type, accent: eventColor),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(width: 14.r, height: 3, color: AppColors.lime),
+            SizedBox(width: 8.r),
+            Text(
+              'GOOD TO KNOW',
+              style: TextStyle(
+                fontFamily: 'GeneralSans',
+                fontWeight: FontWeight.w800,
+                fontSize: 11.sp,
+                letterSpacing: 1.8.sp,
+                color: AppColors.lime,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12.r),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final w = (constraints.maxWidth - 10.r) / 2;
+            return Wrap(
+              spacing: 10.r,
+              runSpacing: 10.r,
+              children: [
+                for (final t in tiles) SizedBox(width: w, child: t),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  String _durationFromCategory(EventCategory c) {
+    switch (c) {
+      case EventCategory.fest: return '3 DAYS';
+      case EventCategory.clubNight: return '5 HOURS';
+      case EventCategory.openMic: return '2 HOURS';
+      case EventCategory.market: return '4 HOURS';
+      case EventCategory.workshop: return '3 HOURS';
+      case EventCategory.meetup: return '2 HOURS';
+      case EventCategory.other: return '2 HOURS';
+    }
+  }
+
+  String _ageFromCategory(EventCategory c) {
+    switch (c) {
+      case EventCategory.clubNight: return '21+';
+      case EventCategory.market: return 'ALL AGES';
+      case EventCategory.workshop: return 'ALL AGES';
+      default: return '18+';
+    }
+  }
+
+  // ---------------- QUERIES CARD ----------------
+
+  Widget _buildQueriesCard(Color eventColor) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+      },
+      child: Container(
+        padding: EdgeInsets.all(14.r),
+        decoration: BoxDecoration(
+          color: AppColors.fromHex('#FF7A00').withValues(alpha: 0.14),
+          border: Border.all(color: AppColors.fromHex('#FF7A00').withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(Corners.md),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42.r, height: 42.r,
+              decoration: BoxDecoration(
+                color: AppColors.fromHex('#FF7A00'),
+                borderRadius: BorderRadius.circular(Corners.sm),
+              ),
+              child: Icon(Icons.headphones_rounded, color: AppColors.paper, size: 22.r),
+            ),
+            SizedBox(width: 14.r),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'HAVE QUERIES?',
+                    style: TextStyle(
+                      fontFamily: 'GeneralSans',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.sp,
+                      letterSpacing: 1.2.sp,
+                      color: AppColors.fromHex('#FF7A00'),
+                    ),
+                  ),
+                  SizedBox(height: 2.r),
+                  Text(
+                    'hit us up · we usually reply in an hour',
+                    style: TextStyle(
+                      fontFamily: 'GeneralSans',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12.sp,
+                      color: AppColors.paper.withValues(alpha: 0.85),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SvgPicture.asset(
+                        'assets/icons/arrow-right.svg',
+                        width: 22.r,
+                        height: 22.r,
+                        colorFilter: ColorFilter.mode(AppColors.fromHex('#FF7A00'), BlendMode.srcIn),
+                      ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------- EVENT TERMS & CONDITIONS ----------------
+
+  Widget _buildTerms() {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _openTermsScreen,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 18.r),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceRaised,
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(Corners.md),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8.r),
+              decoration: BoxDecoration(
+                color: AppColors.paper.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(Corners.sm),
+              ),
+              child: SvgPicture.asset(
+                'assets/icons/paper.svg',
+                width: 18.r,
+                height: 18.r,
+                colorFilter: const ColorFilter.mode(AppColors.paper, BlendMode.srcIn),
+              ),
+            ),
+            SizedBox(width: 14.r),
+            Expanded(
+              child: Text(
+                'EVENT TERMS & CONDITIONS',
+                style: TextStyle(
+                  fontFamily: 'GeneralSans',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.sp,
+                  letterSpacing: 1.2.sp,
+                  color: AppColors.paper,
+                ),
+              ),
+            ),
+            SvgPicture.asset(
+                        'assets/icons/arrow-right.svg',
+                        width: 22.r,
+                        height: 22.r,
+                        colorFilter: ColorFilter.mode(AppColors.muted, BlendMode.srcIn),
+                      ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openTermsScreen() {
+    HapticFeedback.selectionClick();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const _TermsScreen()),
+    );
+  }
+
   // ---------------- BOTTOM CTA ----------------
 
   Widget _buildBottomCta(Color eventColor, Color onEvent) {
-    final label = _isRsvpd
-        ? '✓ TICKET SECURED'
-        : (event.isFree ? '📌 Claim free ticket' : '📌 Get ticket');
     return Positioned(
       left: 0,
       right: 0,
       bottom: 0,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.ground,
-          border: Border(top: BorderSide(color: AppColors.border)),
-        ),
-        padding: EdgeInsets.fromLTRB(
-          Insets.lg,
-          12,
-          Insets.lg,
-          MediaQuery.of(context).padding.bottom + 12,
-        ),
-        child: ElevatedButton(
-          onPressed: _handleRsvp,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _isRsvpd ? Colors.transparent : eventColor,
-            foregroundColor: _isRsvpd ? eventColor : onEvent,
-            padding: EdgeInsets.symmetric(vertical: 16.r),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Corners.md),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: AppColors.ground,
+              border: Border(top: BorderSide(color: AppColors.border)),
             ),
-            side: BorderSide(color: eventColor, width: 2),
-            elevation: 0,
+            padding: EdgeInsets.fromLTRB(
+              Insets.lg,
+              12.r,
+              Insets.lg,
+              MediaQuery.of(context).padding.bottom + 12.r,
+            ),
+            child: Row(
+              children: [
+                // Price column
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      event.isFree ? 'ENTRY' : 'FROM',
+                      style: TextStyle(
+                        fontFamily: 'GeneralSans',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10.sp,
+                        letterSpacing: 1.6.sp,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    SizedBox(height: 2.r),
+                    Text(
+                      event.priceLabel,
+                      style: TextStyle(
+                        fontFamily: 'ClashDisplay',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 26.sp,
+                        height: 1.0,
+                        letterSpacing: -0.4.sp,
+                        color: event.isFree ? AppColors.lime : AppColors.paper,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(width: 16.r),
+                // CTA button
+                Expanded(
+                  child: StickerShadow(
+                    color: AppColors.onNeon,
+                    offset: Offset(4.r, 4.r),
+                    radius: Corners.md,
+                    child: GestureDetector(
+                      onTap: _handleRsvp,
+                      child: Container(
+                        height: 56.r,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _isRsvpd ? Colors.transparent : eventColor,
+                          border: Border.all(color: eventColor, width: 1.8),
+                          borderRadius: BorderRadius.circular(Corners.md),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_isRsvpd)
+                              Icon(Icons.check_rounded, color: eventColor, size: 20.r)
+                            else
+                              Icon(Icons.confirmation_number_rounded, color: onEvent, size: 18.r),
+                            SizedBox(width: 8.r),
+                            Text(
+                              _isRsvpd ? 'SECURED' : 'GET TICKET',
+                              style: TextStyle(
+                                fontFamily: 'GeneralSans',
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15.sp,
+                                letterSpacing: 1.2.sp,
+                                color: _isRsvpd ? eventColor : onEvent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Text(
-            label.toUpperCase(),
+        ],
+      ),
+    );
+  }
+}
+
+class _TermsScreen extends StatelessWidget {
+  const _TermsScreen();
+
+  static const _terms = <String>[
+    'Tickets are non-transferable, non-modifiable, and non-refundable, except if the event is cancelled by the organiser.',
+    'The organiser may adjust the event schedule at their discretion.',
+    'Confirmed tickets and updates will be shared via WhatsApp or email.',
+    'Entry may be denied for intoxication, disorderly conduct, or dress code violations.',
+    'Photography and videography may take place at the venue. By attending you consent to being featured.',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.ground,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leadingWidth: 64.r,
+        leading: Center(
+          child: Padding(
+            padding: EdgeInsets.only(left: 16.r),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 42.r,
+                height: 42.r,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.ground.withValues(alpha: 0.85),
+                  border: Border.all(color: AppColors.paper.withValues(alpha: 0.08)),
+                  borderRadius: BorderRadius.circular(Corners.md),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icons/arrow-left.svg',
+                  width: 20.r,
+                  height: 20.r,
+                  colorFilter: const ColorFilter.mode(AppColors.paper, BlendMode.srcIn),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(Insets.lg, 10.r, Insets.lg, 32.r),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(width: 24.r, height: 4.r, color: AppColors.fromHex('#FF7A00')),
+                      SizedBox(width: 12.r),
+                      Text(
+                        'THE FINE PRINT',
+                        style: TextStyle(
+                          fontFamily: 'GeneralSans',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.sp,
+                          letterSpacing: 2.0.sp,
+                          color: AppColors.fromHex('#FF7A00'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16.r),
+                  Text(
+                    'TERMS &\nCONDITIONS',
+                    style: TextStyle(
+                      fontFamily: 'ClashDisplay',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 42.sp,
+                      height: 0.95,
+                      letterSpacing: -1.0.sp,
+                      color: AppColors.paper,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(Insets.lg, 0, Insets.lg, MediaQuery.of(context).padding.bottom + 40.r),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: 24.r),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 32.r,
+                          height: 32.r,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceRaised,
+                            borderRadius: BorderRadius.circular(Corners.pill),
+                          ),
+                          child: Text(
+                            '${i + 1}',
+                            style: TextStyle(
+                              fontFamily: 'GeneralSans',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14.sp,
+                              color: AppColors.paper,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16.r),
+                        Expanded(
+                          child: Text(
+                            _terms[i],
+                            style: TextStyle(
+                              fontFamily: 'GeneralSans',
+                              fontWeight: FontWeight.w500,
+                              fontSize: 15.sp,
+                              height: 1.5,
+                              color: AppColors.paper.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                childCount: _terms.length,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small tile for the "Good to know" quick-facts grid.
+class _FactTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color accent;
+  const _FactTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(12.r),
+      decoration: BoxDecoration(
+        color: AppColors.graphite,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(Corners.md),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36.r, height: 36.r,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(Corners.sm),
+            ),
+            child: Icon(icon, color: accent, size: 18.r),
+          ),
+          SizedBox(width: 10.r),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'GeneralSans',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 9.sp,
+                    letterSpacing: 1.4.sp,
+                    color: AppColors.muted,
+                  ),
+                ),
+                SizedBox(height: 2.r),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'GeneralSans',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12.sp,
+                    color: AppColors.paper,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact trust chip — single icon + label pill. Multiple chips render as
+/// a Wrap so lonely singles don't stretch full-width.
+class _TrustChip extends StatelessWidget {
+  final IconData? icon;
+  final String? svgPath;
+  final Color color;
+  final String label;
+  const _TrustChip({
+    this.icon,
+    this.svgPath,
+    required this.color,
+    required this.label,
+  }) : assert(icon != null || svgPath != null);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.r, vertical: 7.r),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(Corners.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (svgPath != null)
+            SvgPicture.asset(
+              svgPath!,
+              width: 13.r,
+              height: 13.r,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            )
+          else
+            Icon(icon, color: color, size: 13.r),
+          SizedBox(width: 6.r),
+          Text(
+            label,
             style: TextStyle(
               fontFamily: 'GeneralSans',
               fontWeight: FontWeight.w800,
-              fontSize: 14.sp,
-              letterSpacing: 0.6.sp,
-              color: _isRsvpd ? eventColor : onEvent,
+              fontSize: 10.sp,
+              letterSpacing: 1.2.sp,
+              color: color,
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Single-line trust bar cell — icon + label + sub, used inside the badge row.
+class _TrustCell extends StatelessWidget {
+  final IconData? icon;
+  final String? svgPath;
+  final Color color;
+  final String label;
+  final String sub;
+  const _TrustCell({
+    this.icon,
+    this.svgPath,
+    required this.color,
+    required this.label,
+    required this.sub,
+  }) : assert(icon != null || svgPath != null);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 12.r, horizontal: 10.r),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (svgPath != null)
+            SvgPicture.asset(
+              svgPath!,
+              width: 18.r,
+              height: 18.r,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            )
+          else
+            Icon(icon, color: color, size: 18.r),
+           SizedBox(width: 8.r),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'ClashDisplay',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12.sp,
+                    height: 1.0,
+                    letterSpacing: -0.2.sp,
+                    color: AppColors.paper,
+                  ),
+                ),
+                SizedBox(height: 2.r),
+                Text(
+                  sub.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'GeneralSans',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 8.sp,
+                    letterSpacing: 1.0.sp,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -863,49 +1431,6 @@ class _HatriDivider extends StatelessWidget {
 
 // ---------------- Performer chip (used in lineup) ----------------
 
-class _PerformerChip extends StatelessWidget {
-  final CreatorProfile creator;
-  const _PerformerChip({required this.creator});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 72.r,
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 26.r,
-                backgroundColor: AppColors.surfaceRaised,
-                backgroundImage: NetworkImage(creator.avatarUrl),
-              ),
-              if (creator.isVerified)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: VerifiedBadge(size: 14.r),
-                ),
-            ],
-          ),
-          SizedBox(height: 6.r),
-          Text(
-            creator.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'GeneralSans',
-              fontWeight: FontWeight.w700,
-              fontSize: 11.sp,
-              color: AppColors.paper,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ---------------- Share sheet ----------------
 
@@ -917,7 +1442,7 @@ class _ShareSheet extends StatelessWidget {
   String get _shareText {
     final date = DateFormat('EEE, MMM d').format(event.date);
     final prefix = isRsvpd ? "I'm going to " : "Check this out: ";
-    return "$prefix${event.title} 🎟️\n$date · ${event.time} · ${event.venue}\n\nvia Hatri — Raipur's digital haat";
+    return "$prefix${event.title} 🎟️\n$date · ${event.time} · ${event.venue}\n\nvia Hatri. The digital haat";
   }
 
   Future<void> _share(BuildContext context) async {
