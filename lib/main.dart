@@ -10,6 +10,7 @@ import 'features/communities/bloc/communities_event.dart';
 import 'features/events/bloc/events_bloc.dart';
 import 'features/events/bloc/events_event.dart';
 import 'flavors.dart';
+import 'shared/widgets/connection_gate.dart';
 
 // Flavor is injected at build time via --dart-define=appFlavor=dev|prod.
 // If nothing is passed we default to prod so plain `flutter run` still works.
@@ -49,7 +50,9 @@ class HatriApp extends StatelessWidget {
         routerConfig: appRouter,
         debugShowCheckedModeBanner: false,
         builder: (context, child) {
-          final shell = _ResponsiveShell(child: child);
+          // ConnectionGate overlays OfflineScreen whenever the device drops
+          // its network connection, and stays out of the way otherwise.
+          final shell = ConnectionGate(child: _ResponsiveShell(child: child));
           if (F.appFlavor == Flavor.dev) {
             return Directionality(
               textDirection: TextDirection.ltr,

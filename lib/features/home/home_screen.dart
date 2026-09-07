@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/models/models.dart';
+import '../../core/notifications/notifications_store.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
@@ -221,9 +222,17 @@ class _TopBar extends StatelessWidget {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
           }),
           SizedBox(width: 8.r),
-          _iconButton(context, 'assets/icons/Notification.svg', badge: true, onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
-          }),
+          AnimatedBuilder(
+            animation: NotificationsStore.instance,
+            builder: (context, _) => _iconButton(
+              context,
+              'assets/icons/Notification.svg',
+              badge: NotificationsStore.instance.hasUnread,
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+              },
+            ),
+          ),
         ],
       ),
     );

@@ -14,6 +14,7 @@ import '../../shared/design/motifs.dart';
 import '../creators/creator_profile_screen.dart';
 import '../plans/start_plan_screen.dart';
 import 'ticket_reveal_screen.dart';
+import 'ticket_tier_sheet.dart';
 import '../../core/responsive/responsive.dart';
 
 /// Event details — rebuilt in the new brutalist visual language.
@@ -89,10 +90,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       setState(() => _isRsvpd = false);
       return;
     }
+    // Paid events with tiers → pick tier + qty + mock pay, then print ticket.
+    TicketOrder? order;
+    if (!event.isFree && event.tiers.isNotEmpty) {
+      order = await showTicketTierSheet(context, event);
+      if (order == null || !mounted) return; // user dismissed sheet
+    }
     setState(() => _isRsvpd = true);
     await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
-        builder: (_) => TicketRevealScreen(event: event),
+        builder: (_) => TicketRevealScreen(
+          event: event,
+          tier: order?.tier,
+          quantity: order?.quantity ?? 1,
+        ),
       ),
     );
   }
@@ -861,9 +872,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   Widget _buildQueriesCard(Color eventColor) {
     return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-      },
+      behavior: HitTestBehavior.opaque,
+      onTap: _openFaqScreen,
       child: Container(
         padding: EdgeInsets.all(14.r),
         decoration: BoxDecoration(
@@ -983,6 +993,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
+  void _openFaqScreen() {
+    HapticFeedback.selectionClick();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _FaqScreen(event: event)),
+    );
+  }
+
   // ---------------- BOTTOM CTA ----------------
 
   Widget _buildBottomCta(Color eventColor, Color onEvent) {
@@ -1023,7 +1041,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     ),
                     SizedBox(height: 2.r),
                     Text(
-                      event.priceLabel,
+                      event.startingPriceLabel,
                       style: TextStyle(
                         fontFamily: 'ClashDisplay',
                         fontWeight: FontWeight.w800,
@@ -1216,6 +1234,248 @@ class _TermsScreen extends StatelessWidget {
                   );
                 },
                 childCount: _terms.length,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FaqItem {
+  final String question;
+  final String answer;
+  const _FaqItem(this.question, this.answer);
+}
+
+/// Full-page FAQ — same visual language as the T&C screen, with an
+/// expandable accordion of event-aware Q&A. Opened from the "HAVE QUERIES?"
+/// card on event details.
+class _FaqScreen extends StatefulWidget {
+  final Event event;
+  const _FaqScreen({required this.event});
+
+  @override
+  State<_FaqScreen> createState() => _FaqScreenState();
+}
+
+class _FaqScreenState extends State<_FaqScreen> {
+  int? _openIndex;
+
+  List<_FaqItem> get _items {
+    final e = widget.event;
+    final baseline = <_FaqItem>[
+      _FaqItem(
+        'When should I arrive?',
+        'Doors usually open 30 minutes before ${e.time}. Come early if it\'s your first ${e.category.label.toLowerCase()} — you\'ll want time to soak it in.',
+      ),
+      _FaqItem(
+        'Is the venue safe + friendly?',
+        e.isSafeVenue
+            ? 'Yes. This one\'s a Hatri-verified safe venue — trained staff, clear code of conduct, and someone on hand if things go sideways.'
+            : 'Standard venue. Message the organiser above if you have accessibility or comfort needs.',
+      ),
+      _FaqItem(
+        'Can I bring a friend?',
+        'Absolutely. Each ticket is per person, so book one for them too. Group of 4+? Ping the organiser for group rates.',
+      ),
+      _FaqItem(
+        'What about photos and video?',
+        'Photography may happen for the Hatri wall + organiser socials. You\'ll be tagged only if you opt in on the wall.',
+      ),
+    ];
+    if (!e.isFree) {
+      baseline.addAll([
+        _FaqItem(
+          'What\'s the refund policy?',
+          'Full refund (minus fees) up to 24 hours before the event. After that, tickets are non-refundable but transferable.',
+        ),
+        _FaqItem(
+          'Can I upgrade my tier later?',
+          'If a higher tier is still available, yes — ping the organiser. You\'ll only pay the difference.',
+        ),
+      ]);
+    }
+    return baseline;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = AppColors.fromHex('#FF7A00'); // matches the queries card orange
+    final items = _items;
+    return Scaffold(
+      backgroundColor: AppColors.ground,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leadingWidth: 64.r,
+        leading: Center(
+          child: Padding(
+            padding: EdgeInsets.only(left: 16.r),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 42.r,
+                height: 42.r,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.ground.withValues(alpha: 0.85),
+                  border: Border.all(color: AppColors.paper.withValues(alpha: 0.08)),
+                  borderRadius: BorderRadius.circular(Corners.md),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icons/arrow-left.svg',
+                  width: 20.r,
+                  height: 20.r,
+                  colorFilter: const ColorFilter.mode(AppColors.paper, BlendMode.srcIn),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(Insets.lg, 10.r, Insets.lg, 24.r),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(width: 24.r, height: 4.r, color: accent),
+                      SizedBox(width: 12.r),
+                      Text(
+                        'STILL WONDERING?',
+                        style: TextStyle(
+                          fontFamily: 'GeneralSans',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.sp,
+                          letterSpacing: 2.0.sp,
+                          color: accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16.r),
+                  Text(
+                    'FREQUENTLY\nASKED',
+                    style: TextStyle(
+                      fontFamily: 'ClashDisplay',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 42.sp,
+                      height: 0.95,
+                      letterSpacing: -1.0.sp,
+                      color: AppColors.paper,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(Insets.lg, 0, Insets.lg, MediaQuery.of(context).padding.bottom + 40.r),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  final item = items[i];
+                  final open = _openIndex == i;
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: 12.r),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _openIndex = open ? null : i);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOutCubic,
+                        padding: EdgeInsets.all(16.r),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceRaised,
+                          border: Border.all(
+                            color: open ? accent.withValues(alpha: 0.6) : AppColors.border,
+                            width: open ? 1.4 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(Corners.md),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 3.r),
+                                  decoration: BoxDecoration(
+                                    color: accent.withValues(alpha: 0.14),
+                                    borderRadius: BorderRadius.circular(Corners.pill),
+                                  ),
+                                  child: Text(
+                                    'Q${(i + 1).toString().padLeft(2, '0')}',
+                                    style: TextStyle(
+                                      fontFamily: 'GeneralSans',
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 10.sp,
+                                      letterSpacing: 1.2.sp,
+                                      color: accent,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 12.r),
+                                Expanded(
+                                  child: Text(
+                                    item.question,
+                                    style: TextStyle(
+                                      fontFamily: 'ClashDisplay',
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16.sp,
+                                      height: 1.2,
+                                      letterSpacing: -0.2.sp,
+                                      color: AppColors.paper,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 8.r),
+                                AnimatedRotation(
+                                  turns: open ? 0.5 : 0,
+                                  duration: const Duration(milliseconds: 180),
+                                  child: Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    color: open ? accent : AppColors.muted,
+                                    size: 22.r,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            AnimatedCrossFade(
+                              duration: const Duration(milliseconds: 180),
+                              crossFadeState: open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                              firstChild: const SizedBox(width: double.infinity),
+                              secondChild: Padding(
+                                padding: EdgeInsets.fromLTRB(0, 12.r, 0, 4.r),
+                                child: Text(
+                                  item.answer,
+                                  style: TextStyle(
+                                    fontFamily: 'GeneralSans',
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14.sp,
+                                    height: 1.5,
+                                    color: AppColors.paper.withValues(alpha: 0.85),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                childCount: items.length,
               ),
             ),
           ),

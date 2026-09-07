@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/responsive/responsive.dart';
 
@@ -30,18 +29,10 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
 
   Future<void> _onNext() async {
     HapticFeedback.mediumImpact();
-    // Skip permission screens if they're already granted (subsequent runs).
-    // New installs still see the screens because status starts as .notDetermined.
-    final notif = await Permission.notification.status;
-    final loc = await Permission.locationWhenInUse.status;
     if (!mounted) return;
-    if (notif.isGranted && loc.isGranted) {
-      context.go('/celebration');
-    } else if (notif.isGranted) {
-      context.go('/location-permission');
-    } else {
-      context.go('/notification-permission');
-    }
+    // Bio → step 04 (vibes: birthday + gender). Vibes screen handles the rest
+    // of the flow through to permission screens / celebration.
+    context.go('/vibes');
   }
 
   @override
@@ -62,7 +53,8 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Progress bar
+                    // Progress bar — 4 steps now (name / interests / details / vibes).
+                    // Step 04 (vibes) is dimmed until it becomes active.
                     Row(
                       children: [
                         Expanded(child: Container(height: 3, color: AppColors.accentPink)),
@@ -70,6 +62,13 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                         Expanded(child: Container(height: 3, color: AppColors.accentGreen)),
                         SizedBox(width: 4.r),
                         Expanded(child: Container(height: 3, color: AppColors.accentBlue)),
+                        SizedBox(width: 4.r),
+                        Expanded(
+                          child: Container(
+                            height: 3,
+                            color: AppColors.accentYellow.withValues(alpha: 0.25),
+                          ),
+                        ),
                       ],
                     ),
                     SizedBox(height: 24.r),
@@ -172,38 +171,38 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                     ),
                     SizedBox(height: 40.r),
 
-                    // Bio input — clean underline (opts out of the theme's filled-box).
+                    // Bio input — matches the name-entry TextField styling.
                     TextField(
                       controller: _bioController,
-                      cursorColor: AppColors.accentBlue,
+                      cursorColor: AppColors.fuchsia,
                       maxLines: 3,
                       minLines: 1,
                       style: TextStyle(
-                        color: AppColors.primaryText,
-                        fontSize: 22.sp,
-                        fontWeight: FontWeight.w600,
                         fontFamily: 'GeneralSans',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 28.sp,
+                        color: AppColors.paper,
                       ),
                       decoration: InputDecoration(
                         hintText: 'A short bio…',
                         hintStyle: TextStyle(
-                          color: AppColors.secondaryText,
-                          fontSize: 22.sp,
-                          fontWeight: FontWeight.w600,
                           fontFamily: 'GeneralSans',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 28.sp,
+                          color: AppColors.muted,
                         ),
                         filled: false,
                         fillColor: Colors.transparent,
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 10.r),
-                        enabledBorder: UnderlineInputBorder(
+                        contentPadding: EdgeInsets.symmetric(vertical: 14.r),
+                        border: const UnderlineInputBorder(
                           borderSide: BorderSide(color: AppColors.border),
                         ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.accentBlue, width: 2),
-                        ),
-                        border: UnderlineInputBorder(
+                        enabledBorder: const UnderlineInputBorder(
                           borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: const UnderlineInputBorder(
+                          borderSide: BorderSide(color: AppColors.fuchsia, width: 2),
                         ),
                       ),
                     ),

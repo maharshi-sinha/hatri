@@ -25,7 +25,7 @@ class _NotificationPermissionScreenState
   bool _busy = false;
   bool _needsSettings = false;
   bool _confirmed = false;
-  bool _checking = true;
+  bool _checking = false;
   late final AnimationController _wiggle;
 
   @override
@@ -35,26 +35,6 @@ class _NotificationPermissionScreenState
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _skipIfGranted());
-  }
-
-  Future<void> _skipIfGranted() async {
-    final notif = await Permission.notification.status;
-    if (!mounted) return;
-    if (!notif.isGranted) {
-      // Not skipping — show the screen.
-      setState(() => _checking = false);
-      return;
-    }
-    // Notif already granted → check location too so we can hop straight to
-    // celebration instead of flashing the location screen.
-    final loc = await Permission.locationWhenInUse.status;
-    if (!mounted) return;
-    if (loc.isGranted) {
-      context.pushReplacement('/celebration');
-    } else {
-      context.pushReplacement('/location-permission');
-    }
   }
 
   @override

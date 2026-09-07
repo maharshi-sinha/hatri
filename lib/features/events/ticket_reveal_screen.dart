@@ -4,10 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/notifications/notifications_store.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/models.dart';
+import '../../core/tickets/tickets_store.dart';
 import '../../shared/design/motifs.dart';
+import 'ticket_invoice.dart';
 import 'dart:ui' as ui;
 import 'dart:io';
 import 'dart:typed_data';
@@ -15,10 +19,25 @@ import 'package:flutter/rendering.dart';
 import 'dart:math' as math;
 import '../../core/responsive/responsive.dart';
 
+/// Renders the printing ticket. Optional [tier] shows tier name + price on the
+/// ticket when the event is paid.
 class TicketRevealScreen extends StatefulWidget {
   final Event event;
+  final TicketTier? tier;
+  final int quantity;
 
-  const TicketRevealScreen({super.key, required this.event});
+  /// When true, jumps straight to the finished-ticket state (no printer
+  /// animation, no sound, no confetti). Used when re-viewing a saved ticket
+  /// from My Tickets so the printer chug doesn't replay every time.
+  final bool skipAnimation;
+
+  const TicketRevealScreen({
+    super.key,
+    required this.event,
+    this.tier,
+    this.quantity = 1,
+    this.skipAnimation = false,
+  });
 
   @override
   State<TicketRevealScreen> createState() => _TicketRevealScreenState();
@@ -59,6 +78,11 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
     )..repeat();
     _confettiController = AnimationController(vsync: this);
     _audioPlayer = AudioPlayer();
+    // Re-viewing a saved ticket: jump straight to the finished state.
+    if (widget.skipAnimation) {
+      _controller.value = 1.0;
+      _isFinished = true;
+    }
   }
 
   void _startPrinting() async {
@@ -95,7 +119,39 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
         _isFinished = true;
       });
       _confettiController.forward(from: 0);
+      _pushSuccessNotification();
     }
+  }
+
+  void _pushSuccessNotification() {
+    final e = widget.event;
+    final t = widget.tier;
+    final tierLine = t != null
+        ? ' · ${t.name} × ${widget.quantity} · ₹${t.priceRupees * widget.quantity}'
+        : (widget.quantity > 1 ? ' · × ${widget.quantity}' : '');
+    final now = DateTime.now();
+    NotificationsStore.instance.push(
+      HatriNotification(
+        id: 'ticket_${e.id}_${now.microsecondsSinceEpoch}',
+        kind: HatriNotificationKind.ticketSuccess,
+        title: 'Ticket ready. see you at ${e.title}.',
+        subtitle:
+            '${DateFormat('EEE, MMM d').format(e.date)} · ${e.time} · ${e.venue}$tierLine',
+        timestamp: now,
+        deepLinkEventId: e.id,
+      ),
+    );
+    // Persist the ticket to the user's wallet.
+    TicketsStore.instance.push(
+      SavedTicket(
+        id: 'st_${e.id}_${now.microsecondsSinceEpoch}',
+        ref: 'HTR-${e.id.toUpperCase()}-${now.millisecondsSinceEpoch % 100000}',
+        event: e,
+        tier: t,
+        quantity: widget.quantity,
+        purchasedAt: now,
+      ),
+    );
   }
 
   @override
@@ -105,6 +161,65 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
     _confettiController.dispose();
     _audioPlayer.dispose();
     super.dispose();
+  }
+
+  /// A round icon button that matches the share button's visual weight. Used
+  /// for the DOWNLOAD INVOICE + SHARE actions in the finished-ticket row.
+  Widget _circleAction({
+    IconData? icon,
+    String? iconAsset,
+    required VoidCallback onTap,
+    Color? accent,
+    String? tooltip,
+  }) {
+    Widget child;
+    if (iconAsset != null) {
+      child = SvgPicture.asset(
+        iconAsset,
+        width: 22.r,
+        height: 22.r,
+        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+      );
+    } else {
+      child = Icon(icon, size: 22.r, color: Colors.white);
+    }
+    final button = InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(100.r),
+      child: Container(
+        padding: EdgeInsets.all(18.r),
+        decoration: BoxDecoration(
+          color: (accent ?? Colors.white).withValues(alpha: 0.15),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+          shape: BoxShape.circle,
+        ),
+        child: child,
+      ),
+    );
+    return tooltip == null ? button : Tooltip(message: tooltip, child: button);
+  }
+
+  Future<void> _downloadInvoice() async {
+    final tier = widget.tier;
+    if (tier == null) return;
+    HapticFeedback.selectionClick();
+    final invoice = HatriInvoice(
+      event: widget.event,
+      tier: tier,
+      quantity: widget.quantity,
+      ticketRef: 'HTR-${widget.event.id.toUpperCase()}-${DateTime.now().millisecondsSinceEpoch % 100000}',
+    );
+    try {
+      await invoice.share();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open invoice: $e')),
+      );
+    }
   }
 
   Future<void> _shareTicket() async {
@@ -199,16 +314,52 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
                       ],
                     ),
                     const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'FREE',
-                          style: TextStyle(color: eventColor, fontSize: 18.sp, fontWeight: FontWeight.bold, letterSpacing: 1.0.sp),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.tier != null
+                                    ? '${widget.tier!.name} · ₹${widget.tier!.priceRupees * widget.quantity}'
+                                    : widget.event.priceLabel.toUpperCase(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: eventColor, fontSize: 16.sp, fontWeight: FontWeight.bold, letterSpacing: 1.0.sp),
+                              ),
+                            ),
+                            SizedBox(width: 8.r),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 6.r, vertical: 2.r),
+                              decoration: BoxDecoration(
+                                color: eventColor.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(Corners.pill),
+                              ),
+                              child: Text(
+                                widget.quantity == 1 ? '× 1' : '× ${widget.quantity}',
+                                style: TextStyle(
+                                  color: eventColor,
+                                  fontFamily: 'ClashDisplay',
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 11.sp,
+                                  letterSpacing: 0.4.sp,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        SizedBox(height: 4.r),
                         Text(
                           '#HTR-89241',
-                          style: TextStyle(color: AppColors.secondaryText, fontFamily: 'monospace', fontWeight: FontWeight.bold, letterSpacing: 1.0.sp),
+                          style: TextStyle(
+                            color: AppColors.secondaryText,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11.sp,
+                            letterSpacing: 1.0.sp,
+                          ),
                         ),
                       ],
                     ),
@@ -232,7 +383,46 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12.r),
                         ),
-                        child: Icon(Icons.qr_code_2, color: Colors.black, size: 100.r),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            QrImageView(
+                              data: 'hatri://ticket/${widget.event.id}',
+                              version: QrVersions.auto,
+                              size: 120.r,
+                              padding: EdgeInsets.zero,
+                              backgroundColor: Colors.white,
+                              eyeStyle: const QrEyeStyle(
+                                eyeShape: QrEyeShape.square,
+                                color: Colors.black,
+                              ),
+                              dataModuleStyle: const QrDataModuleStyle(
+                                dataModuleShape: QrDataModuleShape.square,
+                                color: Colors.black,
+                              ),
+                              errorCorrectionLevel: QrErrorCorrectLevel.H,
+                            ),
+                            // Hatri app logo in the center. Sits on a small
+                            // paper patch so the QR modules under it are
+                            // hidden. Level H error correction keeps the code
+                            // scannable.
+                            Container(
+                              width: 34.r,
+                              height: 34.r,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(6.r),
+                              ),
+                              child: Image.asset(
+                                'assets/icons/app_icon.png',
+                                width: 28.r,
+                                height: 28.r,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -536,7 +726,9 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
                       ),
                       SizedBox(height: 4.r),
                       Text(
-                        '1 TICKET WAITING',
+                        widget.quantity == 1
+                            ? '1 TICKET WAITING'
+                            : '${widget.quantity} TICKETS WAITING',
                         style: TextStyle(
                           fontFamily: 'GeneralSans',
                           fontWeight: FontWeight.w700,
@@ -728,26 +920,20 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
                                 ),
                               ),
                             ),
-                            SizedBox(width: 16.r),
-                            InkWell(
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                _shareTicket();
-                              },
-                              borderRadius: BorderRadius.circular(100.r),
-                              child: Container(
-                                padding: EdgeInsets.all(20.r),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.15),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: SvgPicture.asset(
-                                  'assets/icons/Upload.svg',
-                                  width: 24.r,
-                                  height: 24.r,
-                                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                                ),
+                            SizedBox(width: 12.r),
+                            if (widget.tier != null) ...[
+                              _circleAction(
+                                icon: Icons.receipt_long_rounded,
+                                onTap: _downloadInvoice,
+                                accent: eventColor,
+                                tooltip: 'Invoice',
                               ),
+                              SizedBox(width: 12.r),
+                            ],
+                            _circleAction(
+                              iconAsset: 'assets/icons/Upload.svg',
+                              onTap: _shareTicket,
+                              tooltip: 'Share',
                             ),
                           ],
                         ),

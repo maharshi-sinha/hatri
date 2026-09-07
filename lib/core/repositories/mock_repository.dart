@@ -118,6 +118,27 @@ class MockRepository {
       lineup: ['cr3', 'cr5'],
       attendees: [_attendees[0], _attendees[1], _attendees[2], _attendees[3]],
       priceRupees: 499,
+      tiers: [
+        TicketTier(
+          id: 't_early',
+          name: 'EARLY BIRD',
+          priceRupees: 349,
+          perk: 'First 100 tickets only',
+          isPopular: true,
+        ),
+        TicketTier(
+          id: 't_general',
+          name: 'GENERAL',
+          priceRupees: 499,
+          perk: 'Full-day access',
+        ),
+        TicketTier(
+          id: 't_vip',
+          name: 'VIP',
+          priceRupees: 1499,
+          perk: 'Front row + free tote + drink',
+        ),
+      ],
     ),
     Event(
       id: 'e2',
@@ -210,6 +231,27 @@ class MockRepository {
       lineup: ['cr5'],
       priceRupees: 700,
       attendees: [_attendees[0], _attendees[4], _attendees[6]],
+      tiers: [
+        TicketTier(
+          id: 't_stag',
+          name: 'STAG',
+          priceRupees: 700,
+          perk: 'Cover charge',
+        ),
+        TicketTier(
+          id: 't_couple',
+          name: 'COUPLE',
+          priceRupees: 1200,
+          perk: 'Two entries + one drink',
+          isPopular: true,
+        ),
+        TicketTier(
+          id: 't_table',
+          name: 'TABLE OF 4',
+          priceRupees: 3500,
+          perk: 'Reserved table + bottle',
+        ),
+      ],
     ),
     Event(
       id: 'e6',

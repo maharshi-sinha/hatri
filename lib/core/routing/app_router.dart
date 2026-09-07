@@ -12,6 +12,7 @@ import '../../features/auth/auth_screen.dart';
 import '../../features/auth/sign_in_screen.dart';
 import '../../features/auth/interest_selection_screen.dart';
 import '../../features/auth/user_details_screen.dart';
+import '../../features/auth/vibes_screen.dart';
 import '../../features/auth/welcome_carousel_screen.dart';
 import '../../features/auth/phone_entry_screen.dart';
 import '../../features/auth/otp_verification_screen.dart';
@@ -59,6 +60,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/user-details',
       builder: (context, state) => const UserDetailsScreen(),
+    ),
+    GoRoute(
+      path: '/vibes',
+      builder: (context, state) => const VibesScreen(),
     ),
     GoRoute(
       path: '/notification-permission',

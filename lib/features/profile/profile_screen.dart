@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -5,12 +7,27 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/tickets/tickets_store.dart';
 import '../../shared/design/motifs.dart';
-import 'organizer_dashboard_screen.dart';
+import '../tickets/my_tickets_screen.dart';
+import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Future<void> _openEditProfile() async {
+    HapticFeedback.selectionClick();
+    final changed = await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+    );
+    if (changed == true && mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,18 +54,31 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _Hero(userName: userName, userBio: userBio, userImage: userImage),
+                    _Hero(
+                      userName: userName,
+                      userBio: userBio,
+                      userImage: userImage,
+                      userBirthday: user.birthday,
+                      userGender: user.gender,
+                      userEnergy: user.energy,
+                      onEdit: _openEditProfile,
+                    ),
                     SizedBox(height: 24.r),
                     const _StatsRow(),
                     SizedBox(height: 28.r),
                     _InterestsRow(interests: userInterests),
                     SizedBox(height: 32.r),
-                    _MenuCard(
-                      title: 'MY UPCOMING EVENTS',
-                      count: '3',
-                      accent: AppColors.lime,
-                      icon: Icons.event_available_rounded,
-                      onTap: () {},
+                    AnimatedBuilder(
+                      animation: TicketsStore.instance,
+                      builder: (_, _) => _MenuCard(
+                        title: 'MY UPCOMING EVENTS',
+                        count: '${TicketsStore.instance.upcoming.length}',
+                        accent: AppColors.lime,
+                        icon: Icons.event_available_rounded,
+                        onTap: () => Navigator.of(context, rootNavigator: true).push(
+                          MaterialPageRoute(builder: (_) => const MyTicketsScreen()),
+                        ),
+                      ),
                     ),
                     _MenuCard(
                       title: 'MY COMMUNITIES',
@@ -64,18 +94,16 @@ class ProfileScreen extends StatelessWidget {
                       svgIcon: 'assets/icons/Bookmark.svg',
                       onTap: () {},
                     ),
-                    _MenuCard(
-                      title: 'PAST EVENTS',
-                      count: '9',
-                      accent: AppColors.muted,
-                      icon: Icons.history_rounded,
-                      onTap: () {},
-                    ),
-                    SizedBox(height: 20.r),
-                    _OrganizerCard(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const OrganizerDashboardScreen()),
+                    AnimatedBuilder(
+                      animation: TicketsStore.instance,
+                      builder: (_, _) => _MenuCard(
+                        title: 'PAST EVENTS',
+                        count: '${TicketsStore.instance.past.length}',
+                        accent: AppColors.muted,
+                        icon: Icons.history_rounded,
+                        onTap: () => Navigator.of(context, rootNavigator: true).push(
+                          MaterialPageRoute(builder: (_) => const MyTicketsScreen()),
+                        ),
                       ),
                     ),
                   ],
@@ -113,8 +141,7 @@ class _Header extends StatelessWidget {
           GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
-              Navigator.push(
-                context,
+              Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               );
             },
@@ -148,7 +175,19 @@ class _Hero extends StatelessWidget {
   final String userName;
   final String userBio;
   final String userImage;
-  const _Hero({required this.userName, required this.userBio, required this.userImage});
+  final String userBirthday;
+  final String userGender;
+  final String userEnergy;
+  final VoidCallback onEdit;
+  const _Hero({
+    required this.userName,
+    required this.userBio,
+    required this.userImage,
+    required this.userBirthday,
+    required this.userGender,
+    required this.userEnergy,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +205,9 @@ class _Hero extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.paper, width: 3),
               image: DecorationImage(
-                image: NetworkImage(userImage),
+                image: userImage.startsWith('http')
+                    ? NetworkImage(userImage) as ImageProvider
+                    : FileImage(File(userImage)),
                 fit: BoxFit.cover,
               ),
             ),
@@ -196,9 +237,10 @@ class _Hero extends StatelessWidget {
             color: AppColors.muted,
           ),
         ),
+        _buildIdentityRow(),
         SizedBox(height: 18.r),
         GestureDetector(
-          onTap: () => HapticFeedback.selectionClick(),
+          onTap: onEdit,
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 18.r, vertical: 10.r),
             decoration: BoxDecoration(
@@ -221,8 +263,8 @@ class _Hero extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'GeneralSans',
                     fontWeight: FontWeight.w800,
-                    fontSize: 12.sp,
-                    letterSpacing: 1.2.sp,
+                    fontSize: 10.sp,
+                    letterSpacing: 1.4.sp,
                     color: AppColors.paper,
                   ),
                 ),
@@ -232,6 +274,163 @@ class _Hero extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildIdentityRow() {
+    final chips = <Widget>[];
+    final birthDate = DateTime.tryParse(userBirthday);
+
+    // Age chip
+    if (birthDate != null) {
+      final age = _yearsSince(birthDate);
+      chips.add(_metaChip(
+        label: '$age',
+        accent: AppColors.fuchsia,
+        leadingAsset: 'assets/icons/cake.png',
+      ));
+    }
+
+    // Astro sign chip
+    if (birthDate != null) {
+      final sign = _zodiacFor(birthDate);
+      chips.add(_metaChip(
+        label: sign.name.toUpperCase(),
+        accent: AppColors.accentYellow,
+        leadingText: sign.symbol,
+      ));
+    }
+
+    // Energy chip
+    if (userEnergy.isNotEmpty) {
+      final emoji = switch (userEnergy.toLowerCase()) {
+        'introvert' => '🌙',
+        'extrovert' => '⚡',
+        'ambivert' => '🌗',
+        _ => '✦',
+      };
+      chips.add(_metaChip(
+        label: userEnergy.toUpperCase(),
+        accent: AppColors.lime,
+        leadingText: emoji,
+      ));
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsets.only(top: 14.r),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            for (var i = 0; i < chips.length; i++) ...[
+              if (i > 0) SizedBox(width: 6.r),
+              chips[i],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _socialChip({required VoidCallback onTap, required Widget child}) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(height: 28.r, child: child),
+    );
+  }
+
+  Widget _metaChip({
+    required String label,
+    required Color accent,
+    String? leadingText,
+    String? leadingAsset,
+    Widget? leadingWidget,
+  }) {
+    // Fixed-size leading slot so all chips match in height.
+    Widget leading = SizedBox(
+      width: 18.r,
+      height: 18.r,
+      child: Center(
+        child: leadingWidget ??
+            (leadingAsset != null
+                ? Image.asset(
+                    leadingAsset,
+                    width: 16.r,
+                    height: 16.r,
+                    color: accent,
+                  )
+                : Text(
+                    leadingText ?? '',
+                    style: TextStyle(
+                      fontFamily: 'ClashDisplay',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15.sp,
+                      height: 1.0,
+                      color: accent,
+                    ),
+                  )),
+      ),
+    );
+    return Container(
+      height: 28.r,
+      padding: EdgeInsets.symmetric(horizontal: 10.r),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        border: Border.all(color: accent.withValues(alpha: 0.55)),
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          leading,
+          SizedBox(width: 6.r),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'GeneralSans',
+              fontWeight: FontWeight.w800,
+              fontSize: 10.sp,
+              letterSpacing: 1.2.sp,
+              height: 1.0,
+              color: accent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _yearsSince(DateTime d) {
+    final now = DateTime.now();
+    var years = now.year - d.year;
+    if (now.month < d.month || (now.month == d.month && now.day < d.day)) {
+      years--;
+    }
+    return years;
+  }
+
+  ({String name, String symbol}) _zodiacFor(DateTime d) {
+    final m = d.month, day = d.day;
+    if ((m == 3 && day >= 21) || (m == 4 && day <= 19)) return (name: 'Aries', symbol: '♈');
+    if ((m == 4 && day >= 20) || (m == 5 && day <= 20)) return (name: 'Taurus', symbol: '♉');
+    if ((m == 5 && day >= 21) || (m == 6 && day <= 20)) return (name: 'Gemini', symbol: '♊');
+    if ((m == 6 && day >= 21) || (m == 7 && day <= 22)) return (name: 'Cancer', symbol: '♋');
+    if ((m == 7 && day >= 23) || (m == 8 && day <= 22)) return (name: 'Leo', symbol: '♌');
+    if ((m == 8 && day >= 23) || (m == 9 && day <= 22)) return (name: 'Virgo', symbol: '♍');
+    if ((m == 9 && day >= 23) || (m == 10 && day <= 22)) return (name: 'Libra', symbol: '♎');
+    if ((m == 10 && day >= 23) || (m == 11 && day <= 21)) return (name: 'Scorpio', symbol: '♏');
+    if ((m == 11 && day >= 22) || (m == 12 && day <= 21)) return (name: 'Sagittarius', symbol: '♐');
+    if ((m == 12 && day >= 22) || (m == 1 && day <= 19)) return (name: 'Capricorn', symbol: '♑');
+    if ((m == 1 && day >= 20) || (m == 2 && day <= 18)) return (name: 'Aquarius', symbol: '♒');
+    return (name: 'Pisces', symbol: '♓');
   }
 }
 

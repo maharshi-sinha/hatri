@@ -20,6 +20,25 @@ import '../../core/responsive/responsive.dart';
 
 /// Full-screen event map, styled to Hatri. Reuses EventsBloc filters so list
 /// view and map view share one mental model.
+// ─── Tile source configuration ──────────────────────────────────────────────
+// For production we render **Stadia Alidade Smooth Dark** — a dark, OSM-based
+// basemap. Free tier is 200k tile requests/month. Grab an API key at
+// https://client.stadiamaps.com and paste it below. When the key is empty
+// (demo/dev), we fall back to standard OSM tiles wrapped in a client-side
+// dark color filter so the app still works without any account.
+const String _stadiaApiKey = ''; // TODO: paste Stadia API key for production.
+const bool _useStadia = _stadiaApiKey != '';
+
+/// Color matrix that turns light-themed OSM tiles into a dark map (dev
+/// fallback only). Inverts luminance and hue-shifts so water still reads as
+/// water, not a jarring orange.
+const ColorFilter _osmDarkFilter = ColorFilter.matrix(<double>[
+  -0.2, -0.7, -0.1, 0, 255,
+  -0.2, -0.7, -0.1, 0, 255,
+  -0.2, -0.7, -0.1, 0, 255,
+   0,   0,   0,   1, 0,
+]);
+
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -89,14 +108,29 @@ class _MapScreenState extends State<MapScreen> {
                           ),
                         ),
                         children: [
-                          TileLayer(
-                            // CartoDB Dark Matter — dark basemap, no API key.
-                            urlTemplate:
-                                'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-                            subdomains: const ['a', 'b', 'c', 'd'],
-                            userAgentPackageName: 'app.hatri',
-                            retinaMode: RetinaMode.isHighDensity(context),
-                          ),
+                          // Production: Stadia Alidade Smooth Dark (native
+                          // dark theme, OSM-derived, 200k free req/month).
+                          // Fallback: standard OSM tiles + color filter when
+                          // the Stadia key hasn't been added yet.
+                          if (_useStadia)
+                            TileLayer(
+                              urlTemplate:
+                                  'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=$_stadiaApiKey',
+                              userAgentPackageName: 'app.hatri',
+                              retinaMode: RetinaMode.isHighDensity(context),
+                              maxNativeZoom: 20,
+                            )
+                          else
+                            ColorFiltered(
+                              colorFilter: _osmDarkFilter,
+                              child: TileLayer(
+                                urlTemplate:
+                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                userAgentPackageName: 'app.hatri',
+                                retinaMode: RetinaMode.isHighDensity(context),
+                                maxNativeZoom: 19,
+                              ),
+                            ),
                           MarkerLayer(
                             markers: events.map((e) {
                               final selected = _selectedEventId == e.id;
@@ -523,7 +557,9 @@ class _Attribution extends StatelessWidget {
         borderRadius: BorderRadius.circular(4.r),
       ),
       child: Text(
-        '© OpenStreetMap · CARTO',
+        _useStadia
+            ? '© Stadia Maps · © OpenStreetMap contributors'
+            : '© OpenStreetMap contributors',
         style: TextStyle(
           fontFamily: 'GeneralSans',
           fontSize: 9.sp,

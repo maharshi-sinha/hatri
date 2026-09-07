@@ -41,6 +41,25 @@ extension EventCategoryX on EventCategory {
   }
 }
 
+/// A purchasable ticket tier for a paid event.
+class TicketTier {
+  final String id;
+  final String name; // "EARLY BIRD"
+  final int priceRupees;
+  final String? perk; // "First 100 only" / "Includes free tote" etc.
+  final bool isPopular; // highlights the tier in the picker
+  final bool soldOut;
+
+  const TicketTier({
+    required this.id,
+    required this.name,
+    required this.priceRupees,
+    this.perk,
+    this.isPopular = false,
+    this.soldOut = false,
+  });
+}
+
 class Event {
   final String id;
   final String title;
@@ -82,6 +101,9 @@ class Event {
   // Rupee price (paid events). null → falls back to isFree/paid label.
   final int? priceRupees;
 
+  // Purchasable tiers for paid events. null/empty → single-tier fallback.
+  final List<TicketTier> tiers;
+
   Event({
     required this.id,
     required this.title,
@@ -108,11 +130,27 @@ class Event {
     this.lineup = const [],
     this.attendees = const [],
     this.priceRupees,
+    this.tiers = const [],
   });
 
   /// Label used in bottom CTA — "FREE", "₹250", or "PAID" fallback.
   String get priceLabel {
     if (isFree) return 'FREE';
+    if (priceRupees != null) return '₹$priceRupees';
+    return 'PAID';
+  }
+
+  /// Label for the "FROM" pill on event details. For tiered paid events it
+  /// shows the cheapest available tier price so users see the true entry
+  /// point, not whatever the fallback [priceRupees] happens to be.
+  String get startingPriceLabel {
+    if (isFree) return 'FREE';
+    if (tiers.isNotEmpty) {
+      final available = tiers.where((t) => !t.soldOut).toList();
+      final pool = available.isNotEmpty ? available : tiers;
+      final min = pool.map((t) => t.priceRupees).reduce((a, b) => a < b ? a : b);
+      return '₹$min';
+    }
     if (priceRupees != null) return '₹$priceRupees';
     return 'PAID';
   }
@@ -354,12 +392,28 @@ class User {
   List<String> interests;
   String bio;
   String profileImage;
+  String email;
+  bool emailVerified;
+  String instagram; // "@handle" (no url)
+  String x;         // "@handle" (no url)
+  String website;   // full URL
+  String birthday;
+  String gender;
+  String energy; // 'Introvert' | 'Extrovert' | 'Ambivert'
 
   User({
     this.name = '',
     this.interests = const [],
     this.bio = '',
     this.profileImage = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    this.email = '',
+    this.emailVerified = false,
+    this.instagram = '',
+    this.x = '',
+    this.website = '',
+    this.birthday = '22 years young',
+    this.gender = 'Male',
+    this.energy = '',
   });
 }
 
