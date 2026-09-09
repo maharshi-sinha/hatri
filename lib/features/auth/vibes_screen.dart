@@ -376,8 +376,8 @@ class _VibesScreenState extends State<VibesScreen> {
         child: Column(
           children: [
             SizedBox(
-              width: 34.r,
-              height: 34.r,
+              width: 22.r,
+              height: 22.r,
               child: isSvg
                   ? SvgPicture.asset(
                       asset,

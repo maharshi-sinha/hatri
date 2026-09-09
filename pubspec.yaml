@@ -105,6 +105,7 @@ flutter:
     - assets/audio/
     - assets/images/
     - assets/images/utility/
+    - assets/images/stickers/
     - assets/video/
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg

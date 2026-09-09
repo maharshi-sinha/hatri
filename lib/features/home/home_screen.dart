@@ -3,13 +3,17 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../core/models/makers.dart';
 import '../../core/models/models.dart';
 import '../../core/notifications/notifications_store.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
 import '../../shared/widgets/event_card.dart';
+import '../../shared/widgets/maker_rail.dart';
 import '../../shared/widgets/small_event_card.dart';
+import '../../shared/widgets/pull_reveal.dart';
+import '../../shared/widgets/stacked_hero_carousel.dart';
 import '../../shared/widgets/ticker_widget.dart';
 import '../../shared/widgets/notifications_screen.dart';
 import '../../shared/widgets/search_screen.dart';
@@ -17,6 +21,7 @@ import '../discovery/this_week_screen.dart';
 import '../events/event_details_screen.dart';
 import '../events/bloc/events_bloc.dart';
 import '../events/bloc/events_state.dart';
+import '../makers/maker_profile_screen.dart';
 import '../../core/responsive/responsive.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -38,6 +43,7 @@ class HomeScreen extends StatelessWidget {
       "·",
     ];
 
+    final headerH = 34.r;
     return Scaffold(
       backgroundColor: AppColors.ground,
       body: SafeArea(
@@ -45,12 +51,16 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
             const _TopBar(),
-            const TickerWidget(texts: tickerTexts),
             Expanded(
-              child: SingleChildScrollView(
-                // No bottom padding — the footer image runs flush to the nav.
-                padding: EdgeInsets.zero,
-                child: BlocBuilder<EventsBloc, EventsState>(
+              child: PullReveal(
+                headerHeight: headerH,
+                header: const TickerWidget(texts: tickerTexts),
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  padding: EdgeInsets.only(top: headerH),
+                  child: BlocBuilder<EventsBloc, EventsState>(
                   builder: (context, state) {
                     if (state is EventsLoading) {
                       return Padding(
@@ -63,41 +73,63 @@ class HomeScreen extends StatelessWidget {
                       final tonight = _tonight(all);
                       final weekend = all.where((e) => e.isWeekend).toList();
                       final trending = all.where((e) => e.isTrending).toList();
-                      final newlyAdded = all.where((e) => e.isNewlyAdded).toList();
+                      final openNow = AppMakers.prioritized(pool: AppMakers.takingBookings());
+                      // Adaptive: when tonight is empty, Open Right Now moves up
+                      // and upsizes to hero to keep home from reading empty.
+                      final quietNight = tonight.isEmpty;
 
+                      // Events lead. Makers surface below — or take over the
+                      // top slot only on quiet nights when tonight is empty.
+                      const city = 'RAIPUR';
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const _WeekDropCard(),
-                          SizedBox(height: 8.r),
-                          _bigRail(
-                            context,
-                            eyebrow: 'HAPPENING TONIGHT',
-                            title: 'Tonight in Raipur',
-                            accent: AppColors.lime,
-                            events: tonight.isEmpty ? all.take(2).toList() : tonight,
+                          StackedHeroCarousel(
+                            cards: AppHomeHero.cards,
+                            onTap: (card) => _handleHeroTap(context, card),
                           ),
+                          SizedBox(height: 8.r),
+                          // Quiet-night promotion: makers upsized to the top.
+                          if (quietNight)
+                            MakerRail(
+                              eyebrow: 'OPEN RIGHT NOW · MAKERS',
+                              title: 'Off night. they\'re on.',
+                              accent: AppColors.accentYellow,
+                              makers: openNow,
+                              isHero: true,
+                              onTapMaker: (m) => _openMaker(context, m),
+                            ),
+                          if (!quietNight)
+                            _bigRail(
+                              context,
+                              eyebrow: 'HAPPENING TONIGHT IN $city',
+                              title: 'Tonight in Raipur',
+                              accent: AppColors.lime,
+                              events: tonight,
+                            ),
                           _bigRail(
                             context,
-                            eyebrow: 'THIS WEEKEND',
+                            eyebrow: 'THIS WEEKEND IN $city',
                             title: 'Weekend plans',
                             accent: AppColors.fuchsia,
                             events: weekend,
                           ),
                           _smallRail(
                             context,
-                            eyebrow: 'HOT RIGHT NOW',
-                            title: 'Trending',
+                            eyebrow: 'HANDPICKED FOR YOU',
+                            title: 'Handpicked',
                             accent: AppColors.indigo,
                             events: trending,
                           ),
-                          _smallRail(
-                            context,
-                            eyebrow: 'JUST DROPPED',
-                            title: 'Newly added',
-                            accent: AppColors.lime,
-                            events: newlyAdded,
-                          ),
+                          // Makers rail lives BELOW events on regular nights.
+                          if (!quietNight)
+                            MakerRail(
+                              eyebrow: 'OPEN RIGHT NOW · MAKERS',
+                              title: 'Raipur folks taking bookings',
+                              accent: AppColors.accentYellow,
+                              makers: openNow,
+                              onTapMaker: (m) => _openMaker(context, m),
+                            ),
                           SizedBox(height: 48.r),
                           const _FooterCityscape(),
                         ],
@@ -105,12 +137,35 @@ class HomeScreen extends StatelessWidget {
                     }
                     return const SizedBox.shrink();
                   },
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _handleHeroTap(BuildContext context, HeroCard card) {
+    switch (card.type) {
+      case HeroType.weekDrop:
+        Navigator.of(context, rootNavigator: true).push(
+          MaterialPageRoute(builder: (_) => const ThisWeekScreen()),
+        );
+        break;
+      case HeroType.theList:
+      case HeroType.sceneOfTheWeek:
+      case HeroType.cityMoment:
+        // TODO: wire dedicated screens (TheListDetail, SceneDetail).
+        // For now no-op — the card animation + rotation still feels alive.
+        break;
+    }
+  }
+
+  void _openMaker(BuildContext context, Maker maker) {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(builder: (_) => MakerProfileScreen(maker: maker)),
     );
   }
 
@@ -280,119 +335,6 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-/// The weekly "haat drop" hero — the app's heartbeat surface.
-class _WeekDropCard extends StatelessWidget {
-  const _WeekDropCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(Insets.lg, Insets.md, Insets.lg, Insets.sm),
-      child: StickerShadow(
-        color: AppColors.fuchsia,
-        offset: Offset(5.r, 5.r),
-        radius: Corners.lg,
-        child: Container(
-          padding: EdgeInsets.all(18.r),
-          decoration: BoxDecoration(
-            color: AppColors.lime,
-            borderRadius: BorderRadius.circular(Corners.lg),
-            border: Border.all(color: AppColors.onNeon, width: 1.5),
-          ),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.10,
-                  child: HalftoneBackground(
-                    dotColor: AppColors.onNeon,
-                    spacing: 10.r,
-                    dotSize: 2,
-                  ),
-                ),
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const StickerLabel(
-                              text: 'NEW',
-                              background: AppColors.fuchsia,
-                              foreground: AppColors.paper,
-                            ),
-                            SizedBox(width: 8.r),
-                            Text(
-                              'THIS WEEK IN HATRI',
-                              style: TextStyle(
-                                fontFamily: 'GeneralSans',
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10.sp,
-                                letterSpacing: 1.6.sp,
-                                color: AppColors.onNeon,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 6.r),
-                        Text(
-                          'RAIPUR\nGATHERS',
-                          style: TextStyle(
-                            fontFamily: 'ClashDisplay',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 34.sp,
-                            height: 0.92,
-                            letterSpacing: -1.2.sp,
-                            color: AppColors.onNeon,
-                          ),
-                        ),
-                        SizedBox(height: 8.r),
-                        Text(
-                          'Your weekly drop of the scene. Fests, open mics, club nights.',
-                          style: TextStyle(
-                            fontFamily: 'GeneralSans',
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13.sp,
-                            height: 1.3,
-                            color: AppColors.onNeon.withValues(alpha: 0.75),
-                          ),
-                        ),
-                        SizedBox(height: 12.r),
-                        PrimaryButton(
-                          label: 'See the drop',
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const ThisWeekScreen()),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(left: 8.r),
-                    child: Column(
-                      children: [
-                        Starburst(size: 44.r, color: AppColors.fuchsia, points: 8),
-                        SizedBox(height: 8.r),
-                        Starburst(size: 22.r, color: AppColors.indigo, points: 6),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// End-of-scroll cityscape moment — big italic #HATRI wordmark over a subtle
 /// city-skyline line-art background, plus a "crafted with ❤ in India" tag.

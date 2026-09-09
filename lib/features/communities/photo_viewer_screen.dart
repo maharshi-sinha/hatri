@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/models/models.dart';
+import '../../core/reports/reports_store.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/report_sheet.dart';
 
 /// Full-screen swipeable photo viewer for the Memory Wall.
 /// Horizontal swipe changes photo. Progress bar at top, editorial caption
@@ -117,23 +119,44 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
                         colorFilter: const ColorFilter.mode(AppColors.paper, BlendMode.srcIn),
                       ),
                     ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.r, vertical: 6.r),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        border: Border.all(color: AppColors.paper.withValues(alpha: 0.15)),
-                        borderRadius: BorderRadius.circular(Corners.pill),
-                      ),
-                      child: Text(
-                        '${(_index + 1).toString().padLeft(2, '0')} / ${total.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11.sp,
-                          letterSpacing: 0.8.sp,
-                          color: AppColors.paper,
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10.r, vertical: 6.r),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            border: Border.all(color: AppColors.paper.withValues(alpha: 0.15)),
+                            borderRadius: BorderRadius.circular(Corners.pill),
+                          ),
+                          child: Text(
+                            '${(_index + 1).toString().padLeft(2, '0')} / ${total.toString().padLeft(2, '0')}',
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11.sp,
+                              letterSpacing: 0.8.sp,
+                              color: AppColors.paper,
+                            ),
+                          ),
                         ),
-                      ),
+                        SizedBox(width: 8.r),
+                        _chip(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            ReportSheet.show(
+                              context,
+                              target: ReportTarget.wallPost,
+                              targetId: photo.id,
+                              subjectLabel: 'this post',
+                            );
+                          },
+                          child: Icon(
+                            Icons.flag_outlined,
+                            size: 18.r,
+                            color: AppColors.paper,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

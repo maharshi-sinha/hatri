@@ -13,6 +13,7 @@ import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
 import '../creators/creator_profile_screen.dart';
 import '../plans/start_plan_screen.dart';
+import '../../core/saved/saved_events_store.dart';
 import 'ticket_reveal_screen.dart';
 import 'ticket_tier_sheet.dart';
 import '../../core/responsive/responsive.dart';
@@ -28,8 +29,8 @@ class EventDetailsScreen extends StatefulWidget {
 }
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
-  bool _isSaved = false;
   bool _isRsvpd = false;
+  bool get _isSaved => SavedEventsStore.instance.isSaved(event.id);
 
   bool _loadingOrganizer = true;
   CreatorProfile? _organizer;
@@ -81,7 +82,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   void _toggleSaved() {
     HapticFeedback.selectionClick();
-    setState(() => _isSaved = !_isSaved);
+    SavedEventsStore.instance.toggle(event.id);
+    setState(() {});
   }
 
   Future<void> _handleRsvp() async {

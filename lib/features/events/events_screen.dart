@@ -13,7 +13,6 @@ import 'bloc/events_bloc.dart';
 import 'bloc/events_event.dart';
 import 'bloc/events_state.dart';
 import 'event_details_screen.dart';
-import 'host_event_screen.dart';
 import 'map_screen.dart';
 import '../../core/responsive/responsive.dart';
 
@@ -42,22 +41,6 @@ class EventsScreen extends StatelessWidget {
             const _EventsSliverGrid(),
             SliverToBoxAdapter(child: SizedBox(height: 100.r)),
           ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const HostEventScreen()));
-        },
-        backgroundColor: AppColors.fuchsia,
-        foregroundColor: AppColors.onNeon,
-        icon: const Icon(Icons.add_rounded),
-        label: Text(
-          'POST EVENT',
-          style: TextStyle(
-            fontFamily: 'GeneralSans',
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.6.sp,
-          ),
         ),
       ),
     );

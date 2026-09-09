@@ -12,7 +12,8 @@ class Interest {
 }
 
 class InterestSelectionScreen extends StatefulWidget {
-  const InterestSelectionScreen({super.key});
+  final bool isEditMode;
+  const InterestSelectionScreen({super.key, this.isEditMode = false});
 
   @override
   State<InterestSelectionScreen> createState() => _InterestSelectionScreenState();
@@ -49,7 +50,9 @@ class _InterestSelectionScreenState extends State<InterestSelectionScreen> {
     AppColors.fromHex('#FF7A00'),
   ];
 
-  final Set<String> _selectedInterests = {};
+  late final Set<String> _selectedInterests = widget.isEditMode
+      ? currentUser.interests.toSet()
+      : <String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +240,11 @@ class _InterestSelectionScreenState extends State<InterestSelectionScreen> {
                 onPressed: enough
                     ? () {
                         currentUser.interests = _selectedInterests.toList();
-                        context.go('/user-details');
+                        if (widget.isEditMode) {
+                          Navigator.of(context).pop(true);
+                        } else {
+                          context.go('/user-details');
+                        }
                       }
                     : null,
                 style: ElevatedButton.styleFrom(

@@ -9,6 +9,10 @@ import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/tickets/tickets_store.dart';
 import '../../shared/design/motifs.dart';
+import '../../core/saved/saved_events_store.dart';
+import '../auth/interest_selection_screen.dart';
+import '../saved/my_communities_screen.dart';
+import '../saved/saved_events_screen.dart';
 import '../tickets/my_tickets_screen.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
@@ -27,6 +31,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute(builder: (_) => const EditProfileScreen()),
     );
     if (changed == true && mounted) setState(() {});
+  }
+
+  Future<void> _openInterestsEditor() async {
+    HapticFeedback.selectionClick();
+    await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const InterestSelectionScreen(isEditMode: true),
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   @override
@@ -66,7 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     SizedBox(height: 24.r),
                     const _StatsRow(),
                     SizedBox(height: 28.r),
-                    _InterestsRow(interests: userInterests),
+                    _InterestsRow(interests: userInterests, onEdit: _openInterestsEditor),
                     SizedBox(height: 32.r),
                     AnimatedBuilder(
                       animation: TicketsStore.instance,
@@ -81,18 +95,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     _MenuCard(
-                      title: 'MY COMMUNITIES',
-                      count: '4',
+                      title: 'MY SCENES',
+                      count: '${AppCommunities.joinedIds.length}',
                       accent: AppColors.fuchsia,
                       icon: Icons.people_alt_rounded,
-                      onTap: () {},
+                      onTap: () => Navigator.of(context, rootNavigator: true).push(
+                        MaterialPageRoute(builder: (_) => const MyCommunitiesScreen()),
+                      ),
                     ),
-                    _MenuCard(
-                      title: 'SAVED EVENTS',
-                      count: '12',
-                      accent: AppColors.paper,
-                      svgIcon: 'assets/icons/Bookmark.svg',
-                      onTap: () {},
+                    AnimatedBuilder(
+                      animation: SavedEventsStore.instance,
+                      builder: (_, _) => _MenuCard(
+                        title: 'SAVED EVENTS',
+                        count: '${SavedEventsStore.instance.count}',
+                        accent: AppColors.paper,
+                        svgIcon: 'assets/icons/Bookmark.svg',
+                        onTap: () => Navigator.of(context, rootNavigator: true).push(
+                          MaterialPageRoute(builder: (_) => const SavedEventsScreen()),
+                        ),
+                      ),
                     ),
                     AnimatedBuilder(
                       animation: TicketsStore.instance,
@@ -502,7 +523,8 @@ class _StatTile extends StatelessWidget {
 
 class _InterestsRow extends StatelessWidget {
   final List<String> interests;
-  const _InterestsRow({required this.interests});
+  final VoidCallback onEdit;
+  const _InterestsRow({required this.interests, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
@@ -522,6 +544,24 @@ class _InterestsRow extends StatelessWidget {
                 fontSize: 11.sp,
                 letterSpacing: 1.8.sp,
                 color: AppColors.lime,
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: onEdit,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6.r, vertical: 4.r),
+                child: Text(
+                  'EDIT',
+                  style: TextStyle(
+                    fontFamily: 'GeneralSans',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11.sp,
+                    letterSpacing: 1.6.sp,
+                    color: AppColors.muted,
+                  ),
+                ),
               ),
             ),
           ],

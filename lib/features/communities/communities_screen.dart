@@ -378,15 +378,25 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
         ),
       );
 
+  static const _kStickers = <String>[
+    'assets/images/stickers/disco_ball.png',
+    'assets/images/stickers/vinyl.png',
+    'assets/images/stickers/camera.png',
+    'assets/images/stickers/flame_heart.png',
+  ];
+
   List<Widget> _buildCollagePolaroids(List<WallPhoto> photos) {
+    // Static Y2K sticker set — no white polaroid frame, no photo swap by
+    // community. Same positions + tilts as the earlier polaroid layout so the
+    // composition stays balanced.
     const layouts = [
-      _CollageSpec(top: 0, right: 4, size: 72, tiltDeg: 8),
-      _CollageSpec(top: 44, right: 78, size: 62, tiltDeg: -6),
-      _CollageSpec(top: 128, right: 8, size: 78, tiltDeg: 5),
-      _CollageSpec(top: 156, right: 92, size: 58, tiltDeg: -9),
+      _CollageSpec(top: 0, right: 4, size: 82, tiltDeg: 8),
+      _CollageSpec(top: 44, right: 54, size: 70, tiltDeg: -6),
+      _CollageSpec(top: 104, right: 8, size: 88, tiltDeg: 5),
+      _CollageSpec(top: 144, right: 74, size: 66, tiltDeg: -9),
     ];
     final widgets = <Widget>[];
-    for (int i = 0; i < photos.length && i < layouts.length; i++) {
+    for (int i = 0; i < _kStickers.length && i < layouts.length; i++) {
       final spec = layouts[i];
       widgets.add(
         Positioned(
@@ -394,33 +404,12 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
           right: spec.right?.r,
           child: Transform.rotate(
             angle: spec.tiltDeg * 3.14159 / 180,
-            child: Container(
-              padding: EdgeInsets.all(3.r),
-              decoration: BoxDecoration(
-                color: AppColors.paper,
-                borderRadius: BorderRadius.circular(4.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.onNeon.withValues(alpha: 0.25),
-                    blurRadius: 4,
-                    offset: Offset(2.r, 2.r),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(2.r),
-                child: Image.network(
-                  photos[i].photoUrl,
-                  width: spec.size.r,
-                  height: spec.size.r,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    width: spec.size.r,
-                    height: spec.size.r,
-                    color: AppColors.surfaceRaised,
-                  ),
-                ),
-              ),
+            child: Image.asset(
+              _kStickers[i],
+              width: spec.size.r,
+              height: spec.size.r,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
             ),
           ),
         ),
