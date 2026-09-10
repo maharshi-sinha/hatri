@@ -692,17 +692,58 @@ class WeeklyIssue {
   });
 }
 
+// ─── Group chat ───────────────────────────────────────────────────────────
+
+/// One message in the fake group chat between this issue's featured makers.
+/// [alignRight] flips the bubble to the right side for iMessage-style
+/// conversation flow.
+class ChatMessage {
+  final String sender;      // "Ash", "Kavya", "Riya"
+  final String text;
+  final bool alignRight;    // right side of the chat = "you" or highlighted
+  const ChatMessage({
+    required this.sender,
+    required this.text,
+    this.alignRight = false,
+  });
+}
+
+
+// ─── The Oscars · weekly awards ───────────────────────────────────────────
+
+class Award {
+  final String category;     // "BEST DROP"
+  final String winner;       // "Sourdough Ash"
+  final String blurb;        // one-line reason
+  final String glyph;        // emoji or symbol shown as the trophy
+  const Award({
+    required this.category,
+    required this.winner,
+    required this.blurb,
+    required this.glyph,
+  });
+}
+
+/// Week number of the year for a given date. Week 1 = the calendar week
+/// containing January 1st. Close enough to ISO 8601 for rotating weekly
+/// content. Every Monday, this value ticks up by one.
+int hatriWeekNumber(DateTime date) {
+  final firstJan = DateTime(date.year, 1, 1);
+  final daysSince = date.difference(firstJan).inDays;
+  return ((daysSince + firstJan.weekday) / 7).ceil().clamp(1, 53);
+}
+
 class AppWeeklyIssue {
   AppWeeklyIssue._();
 
-  static const WeeklyIssue current = WeeklyIssue(
-    weekNumber: 42,
-    year: 2026,
-    title: 'RAIPUR\nHANDPICKED.',
-    blurb: 'six makers. one week. no algorithms, no ads.',
-    accent: AppColors.lime,
-    shadowAccent: AppColors.fuchsia,
-    makerIds: [
+  // ─── Pools of content, rotated by weekNumber % pool.length ─────────────
+  //
+  // Every week the whole issue shuffles: new maker cut, new chat, new
+  // Oscars. Same code, different content, deterministic archive.
+
+  static const List<List<String>> _makerPools = [
+    // Cut A · maker mix skewing creative + food
+    [
       'm-kavya',
       'm-sourdough-ash',
       'm-riya-tarot',
@@ -710,7 +751,106 @@ class AppWeeklyIssue {
       'm-arya-portraits',
       'm-candle-luma',
     ],
-  );
+    // Cut B · beauty + services + community
+    [
+      'm-nails-by-simran',
+      'm-thrift-basement',
+      'm-home-chef-neha',
+      'm-mishika-tutor',
+      'm-decor-vidhi',
+      'm-ink-ridhi',
+    ],
+    // Cut C · rain-mode picks (things you can enjoy from home)
+    [
+      'm-sourdough-ash',
+      'm-candle-luma',
+      'm-riya-tarot',
+      'm-arya-portraits',
+      'm-mishika-tutor',
+      'm-tara-knits',
+    ],
+  ];
+
+  static const List<List<ChatMessage>> _chatPools = [
+    [
+      ChatMessage(sender: 'Ash', text: 'bread saturday. don\'t be late this time.'),
+      ChatMessage(sender: 'Riya · Tarot', text: 'i already read that in my cards this morning.', alignRight: true),
+      ChatMessage(sender: 'Kavya', text: '💀'),
+      ChatMessage(sender: 'Ash', text: 'cinnamon rolls are for pre-orders only'),
+      ChatMessage(sender: 'Tara Knits', text: 'y\'all get so many hatri bookings, meanwhile me knitting into the void', alignRight: true),
+      ChatMessage(sender: 'Arya', text: 'i finished 4 portrait commissions this week btw'),
+      ChatMessage(sender: 'Luma', text: 'candle shipment late 🕯 my bad', alignRight: true),
+      ChatMessage(sender: 'Kavya', text: 'girl the wet grass candle sold me a whole personality'),
+      ChatMessage(sender: 'Riya · Tarot', text: 'saturday. all of us at ash\'s. bring cash.', alignRight: true),
+    ],
+    [
+      ChatMessage(sender: 'Simran', text: 'anyone else getting weird bookings today or just me'),
+      ChatMessage(sender: 'Neha', text: 'girl the tiffin waitlist is 47 people deep', alignRight: true),
+      ChatMessage(sender: 'Ridhi', text: 'i tattooed 6 minimalist ankle pieces this week i can\'t.'),
+      ChatMessage(sender: 'Vidhi', text: 'my clients keep asking about "y2k but classy"', alignRight: true),
+      ChatMessage(sender: 'Mishika', text: 'parents keep asking why i teach with instagram open'),
+      ChatMessage(sender: 'Basement', text: 'friday drop went in 12 minutes flat 🥲', alignRight: true),
+      ChatMessage(sender: 'Simran', text: 'we should all just move to marine drive'),
+    ],
+    [
+      ChatMessage(sender: 'Ash', text: 'rain = focaccia weather. taking orders.'),
+      ChatMessage(sender: 'Luma', text: 'candle season officially open ☔', alignRight: true),
+      ChatMessage(sender: 'Riya · Tarot', text: 'everyone\'s asking about their situationships this week'),
+      ChatMessage(sender: 'Arya', text: 'i drew a very cursed portrait today. wont say who.', alignRight: true),
+      ChatMessage(sender: 'Mishika', text: 'attendance is up when it rains. take notes.'),
+      ChatMessage(sender: 'Tara Knits', text: 'the winter capsule is coming. eyes open.', alignRight: true),
+    ],
+  ];
+
+  static const List<List<Award>> _oscarsPools = [
+    [
+      Award(category: 'BEST DROP', winner: 'Sourdough Ash', blurb: 'rye that sold out by 11am on saturday.', glyph: '🥖'),
+      Award(category: 'LOUDEST MEETUP', winner: 'Raipur Photography Club', blurb: '18 people, one rainbow, zero on-time arrivals.', glyph: '📣'),
+      Award(category: 'MOST DELULU BOOKING', winner: 'the 6am glam request', blurb: 'anonymous. Kavya declined with grace.', glyph: '🌀'),
+      Award(category: 'BIGGEST GHOST', winner: 'name redacted', blurb: 'didn\'t reply for 5 days. we\'re watching.', glyph: '👻'),
+      Award(category: 'CROWD FAVORITE', winner: 'Riya · Tarot', blurb: '47 inquiries. everyone\'s trying to know.', glyph: '🔮'),
+      Award(category: 'THE HATRI PICK', winner: 'Luma Candles', blurb: 'wet grass. we can\'t explain why it works.', glyph: '🕯'),
+    ],
+    [
+      Award(category: 'BEST DROP', winner: 'The Basement', blurb: 'friday drop, gone in 12 minutes.', glyph: '👕'),
+      Award(category: 'LOUDEST MEETUP', winner: 'Thrift Walk · Marine Drive', blurb: '23 people. every one of them found a jacket.', glyph: '📣'),
+      Award(category: 'MOST DELULU BOOKING', winner: 'a full room refresh in 2 hours', blurb: 'Vidhi laughed. respectfully.', glyph: '🌀'),
+      Award(category: 'BIGGEST GHOST', winner: 'the guy who booked 3 tarots', blurb: 'and cancelled all of them.', glyph: '👻'),
+      Award(category: 'CROWD FAVORITE', winner: 'Neha ki Rasoi', blurb: 'the sambhar was trending. IRL.', glyph: '🍛'),
+      Award(category: 'THE HATRI PICK', winner: 'Ink by Ridhi', blurb: 'clean lines. cleaner values.', glyph: '🖊'),
+    ],
+  ];
+
+  /// Live current issue. Recomputes every time it's read so week number
+  /// and content pool auto-rotate every Monday.
+  static WeeklyIssue get current {
+    final now = DateTime.now();
+    final week = hatriWeekNumber(now);
+    return WeeklyIssue(
+      weekNumber: week,
+      year: now.year,
+      title: 'RAIPUR\nHANDPICKED.',
+      blurb: 'six makers. one week. no algorithms, no ads.',
+      accent: AppColors.lime,
+      shadowAccent: AppColors.fuchsia,
+      makerIds: _makerPools[week % _makerPools.length],
+    );
+  }
+
+  /// Group chat rotates weekly too.
+  static List<ChatMessage> get groupChat {
+    final week = hatriWeekNumber(DateTime.now());
+    return _chatPools[week % _chatPools.length];
+  }
+
+  /// Oscars rotate weekly too.
+  static List<Award> get oscars {
+    final week = hatriWeekNumber(DateTime.now());
+    return _oscarsPools[week % _oscarsPools.length];
+  }
+
+
+  // The group chat — fake curated conversation between this week's featured
 }
 
 class AppMakerCategories {

@@ -60,6 +60,15 @@ class _WeeklyIssueScreenState extends State<WeeklyIssueScreen> {
         : makers.map((m) => m.rating).reduce((a, b) => a + b) / makers.length;
     final totalReviews = makers.fold<int>(0, (a, m) => a + m.reviewCount);
 
+    // 10-spread magazine order. TOC after cover · Group Chat between
+    // features · Oscars right before back cover.
+    final feature1Idx = 4;
+    final chatIdx = feature1Idx + 1;          // 5
+    final feature2Idx = chatIdx + 1;          // 6
+    final lineupIdx = feature2Idx + 1;        // 7
+    final oscarsIdx = lineupIdx + 1;          // 8
+    final backCoverIdx = oscarsIdx + 1;       // 9
+
     final pages = <Widget>[
       _CoverSpread(
         issue: issue,
@@ -67,33 +76,57 @@ class _WeeklyIssueScreenState extends State<WeeklyIssueScreen> {
         spotlightCount: spotlightCount,
         pageActive: _page == 0,
       ),
-      _EditorSpread(issue: issue, pageActive: _page == 1),
+      _TableOfContentsSpread(
+        issue: issue,
+        spotlights: spotlights,
+        pageActive: _page == 1,
+      ),
+      _EditorSpread(issue: issue, pageActive: _page == 2),
       _StatsSpread(
         makerCount: makers.length,
         categoryCount: categories.length,
         neighborhoodCount: neighborhoods.length,
         avgRating: avgRating,
         totalReviews: totalReviews,
-        pageActive: _page == 2,
+        pageActive: _page == 3,
       ),
-      for (int i = 0; i < spotlights.length; i++)
+      // Feature 1
+      if (spotlights.isNotEmpty)
         _FeatureSpread(
-          maker: spotlights[i],
+          maker: spotlights[0],
           accent: issue.accent,
-          featureNumber: i + 1,
+          featureNumber: 1,
           totalFeatures: spotlights.length,
-          pageActive: _page == 3 + i,
-          onTap: () => _openMaker(spotlights[i]),
+          pageActive: _page == feature1Idx,
+          onTap: () => _openMaker(spotlights[0]),
+        ),
+      _GroupChatSpread(
+        messages: AppWeeklyIssue.groupChat,
+        pageActive: _page == chatIdx,
+      ),
+      // Feature 2 (if 2 spotlights)
+      if (spotlights.length > 1)
+        _FeatureSpread(
+          maker: spotlights[1],
+          accent: issue.accent,
+          featureNumber: 2,
+          totalFeatures: spotlights.length,
+          pageActive: _page == feature2Idx,
+          onTap: () => _openMaker(spotlights[1]),
         ),
       _LineupSpread(
         makers: makers,
         onTap: _openMaker,
-        pageActive: _page == 3 + spotlights.length,
+        pageActive: _page == lineupIdx,
+      ),
+      _OscarsSpread(
+        awards: AppWeeklyIssue.oscars,
+        pageActive: _page == oscarsIdx,
       ),
       _BackCoverSpread(
         issue: issue,
         nextWeek: issue.weekNumber + 1,
-        pageActive: _page == 4 + spotlights.length,
+        pageActive: _page == backCoverIdx,
       ),
     ];
 
@@ -1564,3 +1597,459 @@ class _BackCoverBody extends StatelessWidget {
       );
   }
 }
+
+// ─── Spread · Table of Contents ────────────────────────────────────────────
+
+class _TableOfContentsSpread extends StatelessWidget {
+  final WeeklyIssue issue;
+  final List<Maker> spotlights;
+  final bool pageActive;
+  const _TableOfContentsSpread({
+    required this.issue,
+    required this.spotlights,
+    required this.pageActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = <_TocEntry>[
+      const _TocEntry(page: '02', title: 'EDITOR\'S LETTER', teaser: 'a note from the desk.'),
+      const _TocEntry(page: '03', title: 'BY THE NUMBERS', teaser: '6 · 6 · 4. this issue in stats.'),
+      if (spotlights.isNotEmpty)
+        _TocEntry(page: '04', title: 'FEATURE · ${spotlights[0].name.toUpperCase()}', teaser: spotlights[0].tagline),
+      const _TocEntry(page: '05', title: 'OVERHEARD', teaser: 'raipur, off the record.'),
+      if (spotlights.length > 1)
+        _TocEntry(page: '06', title: 'FEATURE · ${spotlights[1].name.toUpperCase()}', teaser: spotlights[1].tagline),
+      const _TocEntry(page: '07', title: 'ROLL CALL', teaser: 'the full cast.'),
+      const _TocEntry(page: '08', title: 'THE OSCARS', teaser: 'and the winner is.'),
+      const _TocEntry(page: '09', title: 'END OF ISSUE', teaser: 'that\'s the cut.'),
+    ];
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24.r, 90.r, 24.r, 40.r),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Enter(active: pageActive, from: const Offset(-0.2, 0),
+            child: _Eyebrow(text: 'IN THIS ISSUE', accent: issue.accent),
+          ),
+          SizedBox(height: 10.r),
+          _Enter(
+            active: pageActive,
+            delay: const Duration(milliseconds: 100),
+            from: const Offset(0, 0.1),
+            child: Text(
+              'Contents.',
+              style: TextStyle(
+                fontFamily: 'ClashDisplay',
+                fontWeight: FontWeight.w800,
+                fontSize: 40.sp,
+                height: 0.95,
+                letterSpacing: -1.4.sp,
+                color: AppColors.paper,
+              ),
+            ),
+          ),
+          SizedBox(height: 20.r),
+          Expanded(
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              physics: const BouncingScrollPhysics(),
+              itemCount: entries.length,
+              separatorBuilder: (_, _) => Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.paper.withValues(alpha: 0.08),
+              ),
+              itemBuilder: (_, i) {
+                final e = entries[i];
+                return _Enter(
+                  active: pageActive,
+                  delay: Duration(milliseconds: 220 + i * 60),
+                  from: const Offset(-0.15, 0),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 10.r),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        SizedBox(
+                          width: 38.r,
+                          child: Text(
+                            e.page,
+                            style: TextStyle(
+                              fontFamily: 'ClashDisplay',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 20.sp,
+                              letterSpacing: -0.6.sp,
+                              color: issue.accent,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                e.title,
+                                style: TextStyle(
+                                  fontFamily: 'ClashDisplay',
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15.sp,
+                                  height: 1.05,
+                                  letterSpacing: -0.2.sp,
+                                  color: AppColors.paper,
+                                ),
+                              ),
+                              SizedBox(height: 2.r),
+                              Text(
+                                e.teaser,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'ClashDisplay',
+                                  fontStyle: FontStyle.italic,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12.sp,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TocEntry {
+  final String page;
+  final String title;
+  final String teaser;
+  const _TocEntry({required this.page, required this.title, required this.teaser});
+}
+
+// ─── Spread · Group Chat ───────────────────────────────────────────────────
+
+class _GroupChatSpread extends StatelessWidget {
+  final List<ChatMessage> messages;
+  final bool pageActive;
+  const _GroupChatSpread({required this.messages, required this.pageActive});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.r, 90.r, 20.r, 30.r),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Enter(
+            active: pageActive,
+            from: const Offset(-0.2, 0),
+            child: _Eyebrow(text: 'THE GROUP CHAT', accent: AppColors.lime),
+          ),
+          SizedBox(height: 10.r),
+          _Enter(
+            active: pageActive,
+            delay: const Duration(milliseconds: 100),
+            from: const Offset(0, 0.1),
+            child: Text(
+              'Makers only.',
+              style: TextStyle(
+                fontFamily: 'ClashDisplay',
+                fontWeight: FontWeight.w800,
+                fontSize: 34.sp,
+                height: 0.95,
+                letterSpacing: -1.2.sp,
+                color: AppColors.paper,
+              ),
+            ),
+          ),
+          SizedBox(height: 4.r),
+          _Enter(
+            active: pageActive,
+            delay: const Duration(milliseconds: 180),
+            child: Text(
+              'a peek at this week\'s featured chat.',
+              style: TextStyle(
+                fontFamily: 'GeneralSans',
+                fontWeight: FontWeight.w600,
+                fontSize: 12.sp,
+                color: AppColors.muted,
+              ),
+            ),
+          ),
+          SizedBox(height: 18.r),
+          Expanded(
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              physics: const BouncingScrollPhysics(),
+              itemCount: messages.length,
+              separatorBuilder: (_, _) => SizedBox(height: 8.r),
+              itemBuilder: (_, i) => _Enter(
+                active: pageActive,
+                delay: Duration(milliseconds: 240 + i * 80),
+                from: Offset(messages[i].alignRight ? 0.2 : -0.2, 0),
+                child: _ChatBubble(msg: messages[i]),
+              ),
+            ),
+          ),
+          SizedBox(height: 8.r),
+          _Enter(
+            active: pageActive,
+            delay: Duration(milliseconds: 240 + messages.length * 80 + 100),
+            child: Center(
+              child: Text(
+                'read · ${_readTime()}',
+                style: TextStyle(
+                  fontFamily: 'GeneralSans',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10.sp,
+                  letterSpacing: 1.4.sp,
+                  color: AppColors.muted,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _readTime() {
+    final now = DateTime.now();
+    final h = now.hour == 0 ? 12 : (now.hour > 12 ? now.hour - 12 : now.hour);
+    final m = now.minute.toString().padLeft(2, '0');
+    final ampm = now.hour >= 12 ? 'PM' : 'AM';
+    return '$h:$m $ampm';
+  }
+}
+
+class _ChatBubble extends StatelessWidget {
+  final ChatMessage msg;
+  const _ChatBubble({required this.msg});
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = msg.alignRight ? AppColors.lime : AppColors.surface;
+    final fg = msg.alignRight ? AppColors.onNeon : AppColors.paper;
+    final senderColor = msg.alignRight ? AppColors.onNeon.withValues(alpha: 0.6) : AppColors.muted;
+    return Row(
+      mainAxisAlignment: msg.alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: [
+        Flexible(
+          child: Container(
+            constraints: BoxConstraints(maxWidth: 280.r),
+            padding: EdgeInsets.symmetric(horizontal: 14.r, vertical: 10.r),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16.r),
+                topRight: Radius.circular(16.r),
+                bottomLeft: Radius.circular(msg.alignRight ? 16.r : 4.r),
+                bottomRight: Radius.circular(msg.alignRight ? 4.r : 16.r),
+              ),
+              border: msg.alignRight ? null : Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  msg.sender,
+                  style: TextStyle(
+                    fontFamily: 'GeneralSans',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 10.sp,
+                    letterSpacing: 1.2.sp,
+                    color: senderColor,
+                  ),
+                ),
+                SizedBox(height: 3.r),
+                Text(
+                  msg.text,
+                  style: TextStyle(
+                    fontFamily: 'GeneralSans',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14.sp,
+                    height: 1.35,
+                    color: fg,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Spread · The Oscars ───────────────────────────────────────────────────
+
+class _OscarsSpread extends StatelessWidget {
+  final List<Award> awards;
+  final bool pageActive;
+  const _OscarsSpread({required this.awards, required this.pageActive});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.accentYellow,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.10,
+              child: HalftoneBackground(
+                dotColor: AppColors.onNeon,
+                spacing: 12.r,
+                dotSize: 2,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 60.r,
+            right: -30.r,
+            child: _Enter(
+              active: pageActive,
+              delay: const Duration(milliseconds: 250),
+              from: const Offset(0.4, -0.2),
+              child: Transform.rotate(
+                angle: 0.25,
+                child: Starburst(size: 130.r, color: AppColors.fuchsia, points: 12),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(24.r, 90.r, 24.r, 40.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Enter(
+                  active: pageActive,
+                  from: const Offset(-0.2, 0),
+                  child: Row(
+                    children: [
+                      Container(width: 14.r, height: 3, color: AppColors.fuchsia),
+                      SizedBox(width: 8.r),
+                      Text(
+                        'THE OSCARS · WEEK 42',
+                        style: TextStyle(
+                          fontFamily: 'GeneralSans',
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11.sp,
+                          letterSpacing: 1.8.sp,
+                          color: AppColors.fuchsia,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10.r),
+                _Enter(
+                  active: pageActive,
+                  delay: const Duration(milliseconds: 100),
+                  from: const Offset(0, 0.1),
+                  child: Text(
+                    'And the winner is...',
+                    style: TextStyle(
+                      fontFamily: 'ClashDisplay',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 30.sp,
+                      height: 0.95,
+                      letterSpacing: -1.2.sp,
+                      color: AppColors.onNeon,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 18.r),
+                Expanded(
+                  child: ListView.separated(
+                    padding: EdgeInsets.zero,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: awards.length,
+                    separatorBuilder: (_, _) => Divider(
+                      height: 1,
+                      thickness: 1.5,
+                      color: AppColors.onNeon.withValues(alpha: 0.15),
+                    ),
+                    itemBuilder: (_, i) => _Enter(
+                      active: pageActive,
+                      delay: Duration(milliseconds: 260 + i * 80),
+                      from: const Offset(-0.15, 0),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 10.r),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              awards[i].glyph,
+                              style: TextStyle(fontSize: 28.sp),
+                            ),
+                            SizedBox(width: 12.r),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    awards[i].category,
+                                    style: TextStyle(
+                                      fontFamily: 'GeneralSans',
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 10.sp,
+                                      letterSpacing: 1.4.sp,
+                                      color: AppColors.fuchsia,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2.r),
+                                  Text(
+                                    awards[i].winner,
+                                    style: TextStyle(
+                                      fontFamily: 'ClashDisplay',
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 18.sp,
+                                      height: 1.05,
+                                      letterSpacing: -0.4.sp,
+                                      color: AppColors.onNeon,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2.r),
+                                  Text(
+                                    awards[i].blurb,
+                                    style: TextStyle(
+                                      fontFamily: 'ClashDisplay',
+                                      fontStyle: FontStyle.italic,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 11.sp,
+                                      height: 1.3,
+                                      color: AppColors.onNeon.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
