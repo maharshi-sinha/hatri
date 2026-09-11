@@ -58,6 +58,41 @@ dependencies:
   printing: ^5.13.4
   connectivity_plus: ^6.1.0
 
+  # ─── Backend API + Auth (hatri-backend integration) ───
+  dio: ^5.7.0
+  dio_smart_retry: ^7.0.1
+  flutter_secure_storage: ^9.2.2
+  jwt_decoder: ^2.0.1
+  uuid: ^4.5.1
+
+  # ─── Firebase (push, crashes, perf) ───
+  firebase_core: ^3.6.0
+  firebase_messaging: ^15.1.3
+  firebase_crashlytics: ^4.1.3
+  firebase_performance: ^0.10.0+11
+
+  # ─── Analytics + Attribution ───
+  mixpanel_flutter: ^2.3.5
+  appsflyer_sdk: ^6.15.2
+
+  # ─── Image handling (uploads + CDN reads) ───
+  flutter_image_compress: ^2.4.0
+  cached_network_image: ^3.4.1
+
+  # ─── Location + Deep links ───
+  geolocator: ^13.0.1
+  geocoding: ^3.0.0
+  app_links: ^6.3.2
+
+  # ─── UX polish ───
+  flutter_local_notifications: ^17.2.3
+  add_2_calendar: ^3.0.1
+  shimmer: ^3.0.0
+
+  # ─── Utilities ───
+  package_info_plus: ^8.1.0
+  path_provider: ^2.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -70,6 +105,9 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.13.1
   flutter_flavorizr: ^2.2.3
+
+  # ─── Dev-only ───
+  pretty_dio_logger: ^1.4.0
 
 # NOTE: the themed (monochrome) Android layer is maintained by hand —
 # flutter_launcher_icons 0.13.1 has no `adaptive_icon_monochrome` key and
