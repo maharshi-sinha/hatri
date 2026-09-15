@@ -5,9 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../backend/api/api_exception.dart';
+import '../../backend/services/avatar_upload_service.dart';
+import '../../backend/services/user_service.dart';
+import '../../core/di/injection_container.dart';
 import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/design/hatri_snack.dart';
 import '../../shared/widgets/social_brand_badge.dart';
 import 'verify_email_screen.dart';
 
@@ -153,22 +158,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!_canSave || _saving) return;
     HapticFeedback.mediumImpact();
     setState(() => _saving = true);
-    // Mock save latency so the button state reads real.
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    currentUser.name = _name.text.trim();
-    currentUser.bio = _bio.text.trim();
+
+    final newName = _name.text.trim();
+    final newBio = _bio.text.trim();
+    String? uploadedAvatarUrl;
+
+    try {
+      // 1. Upload new avatar first — if this fails the whole save fails,
+      // so the user isn't left with a half-updated profile.
+      if (_pickedAvatar != null) {
+        final user = await sl<AvatarUploadService>().uploadAvatar(_pickedAvatar!);
+        uploadedAvatarUrl = user.avatarUrl;
+      }
+      // 2. Text fields — only send what changed.
+      // email/instagram/x/website stay local until backend supports them.
+      await sl<UserService>().updateProfile(
+        displayName: newName == currentUser.name ? null : newName,
+        bio: newBio == currentUser.bio ? null : newBio,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      HatriSnack.show(context, _friendlyError(e), vibe: SnackVibe.info, emoji: '⚠️');
+      return;
+    }
+
+    // Update the local mirror so the profile screen renders immediately.
+    currentUser.name = newName;
+    currentUser.bio = newBio;
     currentUser.email = _email.text.trim();
     currentUser.emailVerified = _emailVerified;
     currentUser.instagram = _normalizeHandle(_instagram.text);
     currentUser.x = _normalizeHandle(_x.text);
     currentUser.website = _website.text.trim();
-    if (_pickedAvatar != null) {
-      currentUser.profileImage = _pickedAvatar!.path;
-    } else {
+    if (uploadedAvatarUrl != null) {
+      currentUser.profileImage = uploadedAvatarUrl;
+    } else if (_avatarUrl.isNotEmpty) {
       currentUser.profileImage = _avatarUrl;
     }
     if (!mounted) return;
     Navigator.pop(context, true);
+  }
+
+  String _friendlyError(ApiException e) {
+    if (e is NetworkException) return 'no network. try again.';
+    if (e is UnauthorizedException) return 'session expired. sign in again.';
+    return e.message;
   }
 
   @override

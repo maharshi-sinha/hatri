@@ -5,6 +5,7 @@ import '../../backend/api/events_api.dart';
 import '../../backend/api/http_client.dart';
 import '../../backend/api/makers_api.dart';
 import '../../backend/services/auth_service.dart';
+import '../../backend/services/avatar_upload_service.dart';
 import '../../backend/services/user_service.dart';
 import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/events/bloc/events_bloc.dart';
@@ -30,6 +31,9 @@ void init() {
   );
   sl.registerLazySingleton<UserService>(
     () => UserService(http: sl<HttpClient>(), auth: sl<AuthService>()),
+  );
+  sl.registerLazySingleton<AvatarUploadService>(
+    () => AvatarUploadService(http: sl<HttpClient>(), auth: sl<AuthService>()),
   );
 
   // ─── Blocs ───

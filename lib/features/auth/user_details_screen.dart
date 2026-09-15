@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../core/models/models.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/responsive/responsive.dart';
@@ -14,7 +18,8 @@ class UserDetailsScreen extends StatefulWidget {
 
 class _UserDetailsScreenState extends State<UserDetailsScreen> {
   final TextEditingController _bioController = TextEditingController();
-  bool _isPhotoAdded = false;
+  final ImagePicker _picker = ImagePicker();
+  File? _pickedPhoto;
 
   @override
   void initState() {
@@ -28,10 +33,26 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
     super.dispose();
   }
 
+  Future<void> _pickPhoto() async {
+    HapticFeedback.lightImpact();
+    final xfile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    if (xfile == null) return;
+    setState(() {
+      _pickedPhoto = File(xfile.path);
+      // Held locally until Supabase Storage upload wires up. Then Sprint F1c/3c
+      // swaps this to the returned public URL.
+      currentUser.profileImage = xfile.path;
+    });
+  }
+
   Future<void> _onNext() async {
     HapticFeedback.mediumImpact();
     currentUser.bio = _bioController.text.trim();
-    // NOTE: profileImage upload wired in Sprint 3c (S3). Toggle stays UI-only.
     if (!mounted) return;
     // Bio → step 04 (vibes: birthday + gender). Vibes screen handles the rest
     // of the flow through to permission screens / celebration.
@@ -114,13 +135,10 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                     ),
                     SizedBox(height: 40.r),
 
-                    // Avatar picker
+                    // Avatar picker — real image_picker from gallery.
                     Center(
                       child: GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          setState(() => _isPhotoAdded = !_isPhotoAdded);
-                        },
+                        onTap: _pickPhoto,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           width: 120.r,
@@ -129,16 +147,14 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                             shape: BoxShape.circle,
                             border: Border.all(color: AppColors.accentBlue, width: 2),
                             color: AppColors.card,
-                            image: _isPhotoAdded
-                                ? const DecorationImage(
-                                    image: NetworkImage(
-                                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-                                    ),
+                            image: _pickedPhoto != null
+                                ? DecorationImage(
+                                    image: FileImage(_pickedPhoto!),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
                             boxShadow: [
-                              if (_isPhotoAdded)
+                              if (_pickedPhoto != null)
                                 BoxShadow(
                                   color: AppColors.accentBlue.withValues(alpha: 0.3),
                                   blurRadius: 20.r,
@@ -149,7 +165,7 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              if (!_isPhotoAdded)
+                              if (_pickedPhoto == null)
                                 Icon(Icons.camera_alt, color: AppColors.secondaryText, size: 32.r),
                               Positioned(
                                 bottom: 0,
@@ -161,7 +177,7 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
-                                    _isPhotoAdded ? Icons.check : Icons.add,
+                                    _pickedPhoto != null ? Icons.check : Icons.add,
                                     color: Colors.white,
                                     size: 16.r,
                                   ),

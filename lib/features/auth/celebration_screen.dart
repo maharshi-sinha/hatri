@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../backend/services/avatar_upload_service.dart';
 import '../../backend/services/user_service.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/models/models.dart';
@@ -33,10 +36,11 @@ class _CelebrationScreenState extends State<CelebrationScreen>
     _persistProfile();
   }
 
-  /// Fire-and-forget PATCH /me with everything the onboarding collected.
-  /// Silently logs errors — the celebration animation must never block.
-  /// The user can edit profile later from settings if this fails.
+  /// Fire-and-forget: PATCH /me + upload avatar if the user picked a photo.
+  /// Silently logs errors so the celebration animation never blocks.
+  /// User can retry later from the edit-profile screen if something fails.
   Future<void> _persistProfile() async {
+    // 1. Persist text fields first (fast) so downstream screens see them.
     try {
       await sl<UserService>().updateProfile(
         displayName: currentUser.name.isEmpty ? null : currentUser.name,
@@ -48,6 +52,23 @@ class _CelebrationScreenState extends State<CelebrationScreen>
       );
     } catch (e) {
       debugPrint('Profile PATCH failed (non-fatal): $e');
+    }
+
+    // 2. Upload avatar if one was picked. Skips the network round trip
+    // when the path is empty or points to a remote URL (nothing to send).
+    final path = currentUser.profileImage;
+    if (path.isNotEmpty && !path.startsWith('http')) {
+      try {
+        final file = File(path);
+        if (await file.exists()) {
+          final user = await sl<AvatarUploadService>().uploadAvatar(file);
+          if (user.avatarUrl != null) {
+            currentUser.profileImage = user.avatarUrl!;
+          }
+        }
+      } catch (e) {
+        debugPrint('Avatar upload failed (non-fatal): $e');
+      }
     }
   }
 
