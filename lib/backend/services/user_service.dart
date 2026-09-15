@@ -22,6 +22,9 @@ class UserService {
     String? homeCitySlug,
     String? currentCitySlug,
     List<String>? interests,
+    String? bio,
+    String? gender,
+    String? energy,
   }) async {
     final body = <String, dynamic>{
       if (displayName != null) 'displayName': displayName,
@@ -29,6 +32,9 @@ class UserService {
       if (homeCitySlug != null) 'homeCitySlug': homeCitySlug,
       if (currentCitySlug != null) 'currentCitySlug': currentCitySlug,
       if (interests != null) 'interests': interests,
+      if (bio != null) 'bio': bio,
+      if (gender != null) 'gender': gender,
+      if (energy != null) 'energy': energy,
     };
     if (body.isEmpty) {
       // Nothing to patch — just return cached user.

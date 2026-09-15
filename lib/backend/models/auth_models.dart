@@ -5,12 +5,22 @@ class ApiUser {
   final String id;
   final String phone;
   final String? displayName;
+  final String? avatarUrl;
+  final String? bio;
+  final String? gender;
+  final String? energy;
+  final List<String> interests;
   final List<String> roles;
 
   const ApiUser({
     required this.id,
     required this.phone,
     required this.displayName,
+    required this.avatarUrl,
+    required this.bio,
+    required this.gender,
+    required this.energy,
+    required this.interests,
     required this.roles,
   });
 
@@ -18,6 +28,13 @@ class ApiUser {
         id: json['id'] as String,
         phone: json['phone'] as String,
         displayName: json['displayName'] as String?,
+        avatarUrl: json['avatarUrl'] as String?,
+        bio: json['bio'] as String?,
+        gender: json['gender'] as String?,
+        energy: json['energy'] as String?,
+        interests: (json['interests'] as List<dynamic>? ?? const [])
+            .map((e) => e as String)
+            .toList(),
         roles: (json['roles'] as List<dynamic>? ?? const [])
             .map((e) => e as String)
             .toList(),
@@ -27,6 +44,11 @@ class ApiUser {
         'id': id,
         'phone': phone,
         'displayName': displayName,
+        'avatarUrl': avatarUrl,
+        'bio': bio,
+        'gender': gender,
+        'energy': energy,
+        'interests': interests,
         'roles': roles,
       };
 }

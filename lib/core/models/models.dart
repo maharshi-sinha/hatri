@@ -405,14 +405,14 @@ class User {
     this.name = '',
     this.interests = const [],
     this.bio = '',
-    this.profileImage = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    this.profileImage = '',
     this.email = '',
     this.emailVerified = false,
     this.instagram = '',
     this.x = '',
     this.website = '',
-    this.birthday = '22 years young',
-    this.gender = 'Male',
+    this.birthday = '',
+    this.gender = '',
     this.energy = '',
   });
 }

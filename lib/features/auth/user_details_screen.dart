@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/models/models.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/responsive/responsive.dart';
 
@@ -29,6 +30,8 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
 
   Future<void> _onNext() async {
     HapticFeedback.mediumImpact();
+    currentUser.bio = _bioController.text.trim();
+    // NOTE: profileImage upload wired in Sprint 3c (S3). Toggle stays UI-only.
     if (!mounted) return;
     // Bio → step 04 (vibes: birthday + gender). Vibes screen handles the rest
     // of the flow through to permission screens / celebration.
