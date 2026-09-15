@@ -5,12 +5,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../backend/api/api_exception.dart';
+import '../../backend/services/auth_service.dart';
+import '../../core/di/injection_container.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/hatri_snack.dart';
 
 /// OTP verification — responsive 6-box grid, keyboard-safe pinned CTA,
-/// tap-outside-to-dismiss. Prototype: accepts ANY 6 digits.
+/// tap-outside-to-dismiss.
+///
+/// The [phoneMasked] parameter carries the raw E.164 phone (e.g. `+919999999999`)
+/// used to talk to the backend, and is formatted for display in [_displayPhone].
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneMasked;
   const OtpVerificationScreen({super.key, required this.phoneMasked});
@@ -26,6 +32,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   Timer? _timer;
   int _secondsLeft = 30;
+  bool _verifying = false;
+  bool _resending = false;
+
+  /// Backend format: +919999999999 (no space).
+  String get _rawPhone {
+    // The screen accepts either a raw E.164 or a formatted "+91 XXXXXXXXXX".
+    // We normalize by stripping non-digits then re-prefixing '+'.
+    final digits = widget.phoneMasked.replaceAll(RegExp(r'\D'), '');
+    return digits.isEmpty ? widget.phoneMasked : '+$digits';
+  }
+
+  /// Display format: +91 XXXXXXXXXX.
+  String get _displayPhone {
+    final raw = _rawPhone;
+    if (raw.startsWith('+91') && raw.length > 3) {
+      return '+91 ${raw.substring(3)}';
+    }
+    return raw;
+  }
 
   @override
   void initState() {
@@ -91,21 +116,71 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-  void _verify() {
+  Future<void> _verify() async {
+    if (_verifying) return;
     HapticFeedback.mediumImpact();
     FocusScope.of(context).unfocus();
-    context.go('/name');
+    setState(() => _verifying = true);
+    try {
+      await sl<AuthService>().verifyOtp(_rawPhone, _code);
+      if (!mounted) return;
+      context.go('/name');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      HatriSnack.show(
+        context,
+        _friendlyError(e),
+        vibe: SnackVibe.info,
+        emoji: '❌',
+      );
+      // Clear inputs on failure so user can retype.
+      for (final c in _controllers) {
+        c.clear();
+      }
+      FocusScope.of(context).requestFocus(_focus.first);
+      setState(() {});
+    } finally {
+      if (mounted) setState(() => _verifying = false);
+    }
   }
 
-  void _resend() {
+  Future<void> _resend() async {
+    if (_resending) return;
     HapticFeedback.selectionClick();
-    _startCountdown();
-    HatriSnack.show(
-      context,
-      'new code, on the way',
-      vibe: SnackVibe.info,
-      emoji: '📩',
-    );
+    setState(() => _resending = true);
+    try {
+      await sl<AuthService>().requestOtp(_rawPhone);
+      _startCountdown();
+      if (!mounted) return;
+      HatriSnack.show(
+        context,
+        'new code, on the way',
+        vibe: SnackVibe.info,
+        emoji: '📩',
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      HatriSnack.show(
+        context,
+        _friendlyError(e),
+        vibe: SnackVibe.info,
+        emoji: '📵',
+      );
+    } finally {
+      if (mounted) setState(() => _resending = false);
+    }
+  }
+
+  String _friendlyError(ApiException e) {
+    if (e is NetworkException) return 'no network. try again.';
+    if (e is ClientException && e.statusCode == 401) {
+      return 'wrong code. try again.';
+    }
+    if (e is UnauthorizedException) return 'wrong code. try again.';
+    if (e is ClientException && e.statusCode == 429) {
+      return 'chill, too many tries. wait a bit.';
+    }
+    return e.message;
   }
 
   @override
@@ -191,7 +266,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             const TextSpan(
                                 text: '6 magic digits sent to '),
                             TextSpan(
-                              text: widget.phoneMasked,
+                              text: _displayPhone,
                               style: const TextStyle(
                                 color: AppColors.paper,
                                 fontWeight: FontWeight.w700,
@@ -270,27 +345,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                 ],
                               ),
                       ),
-                      SizedBox(height: 16.r),
-                      Center(
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 12.r, vertical: 6.r),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceRaised,
-                            borderRadius: BorderRadius.circular(Corners.pill),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Text(
-                            'any 6 digits, no cap 🤝',
-                            style: TextStyle(
-                              fontFamily: 'GeneralSans',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11.sp,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -301,7 +355,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _canVerify ? _verify : null,
+                    onPressed: (_canVerify && !_verifying) ? _verify : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.fuchsia,
                       foregroundColor: AppColors.paper,
@@ -313,16 +367,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: Text(
-                      'VERIFY',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'GeneralSans',
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15.sp,
-                        letterSpacing: 1.0.sp,
-                      ),
-                    ),
+                    child: _verifying
+                        ? SizedBox(
+                            height: 20.r,
+                            width: 20.r,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'VERIFY',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'GeneralSans',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15.sp,
+                              letterSpacing: 1.0.sp,
+                            ),
+                          ),
                   ),
                 ),
               ),

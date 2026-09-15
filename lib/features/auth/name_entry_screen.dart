@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -32,6 +33,7 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
 
   void _continue() {
     HapticFeedback.mediumImpact();
+    currentUser.name = _nameController.text.trim();
     context.go('/interests');
   }
 

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../backend/services/user_service.dart';
+import '../../core/di/injection_container.dart';
+import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/motifs.dart';
@@ -27,6 +30,22 @@ class _CelebrationScreenState extends State<CelebrationScreen>
       vsync: this,
       duration: const Duration(seconds: 30),
     )..repeat();
+    _persistProfile();
+  }
+
+  /// Fire-and-forget PATCH /me with everything the onboarding collected.
+  /// Silently logs errors — the celebration animation must never block.
+  /// The user can edit profile later from settings if this fails.
+  Future<void> _persistProfile() async {
+    try {
+      await sl<UserService>().updateProfile(
+        displayName: currentUser.name.isEmpty ? null : currentUser.name,
+        dob: currentUser.birthday.isEmpty ? null : currentUser.birthday,
+        interests: currentUser.interests.isEmpty ? null : currentUser.interests,
+      );
+    } catch (e) {
+      debugPrint('Profile PATCH failed (non-fatal): $e');
+    }
   }
 
   @override

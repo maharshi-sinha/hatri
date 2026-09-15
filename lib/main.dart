@@ -27,6 +27,7 @@ void main() async {
     orElse: () => Flavor.prod,
   );
   di.init();
+  await di.bootAuth();
   runApp(const HatriApp());
 }
 

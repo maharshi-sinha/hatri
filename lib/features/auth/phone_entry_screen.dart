@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../backend/api/api_exception.dart';
+import '../../backend/services/auth_service.dart';
+import '../../core/di/injection_container.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/design/hatri_snack.dart';
 
 /// Phone number entry — India-only (+91) for the prototype.
 class PhoneEntryScreen extends StatefulWidget {
@@ -15,6 +19,7 @@ class PhoneEntryScreen extends StatefulWidget {
 
 class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
   final _phoneController = TextEditingController();
+  bool _sending = false;
 
   @override
   void initState() {
@@ -28,11 +33,32 @@ class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
     super.dispose();
   }
 
-  bool get _canContinue => _phoneController.text.length == 10;
+  bool get _canContinue => _phoneController.text.length == 10 && !_sending;
 
-  void _sendOtp() {
+  Future<void> _sendOtp() async {
+    if (_sending) return;
     HapticFeedback.mediumImpact();
-    context.push('/otp', extra: '+91 ${_phoneController.text}');
+    setState(() => _sending = true);
+    // Backend expects E.164 with no spaces.
+    final phone = '+91${_phoneController.text}';
+    try {
+      await sl<AuthService>().requestOtp(phone);
+      if (!mounted) return;
+      context.push('/otp', extra: phone);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      HatriSnack.show(context, _friendlyError(e), vibe: SnackVibe.info, emoji: '📵');
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  String _friendlyError(ApiException e) {
+    if (e is NetworkException) return 'no network. try again in a bit.';
+    if (e is ClientException && e.statusCode == 429) {
+      return 'chill, too many OTPs. try in a minute.';
+    }
+    return e.message;
   }
 
   @override
@@ -190,15 +216,24 @@ class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: Text(
-                    'SEND OTP',
-                    style: TextStyle(
-                      fontFamily: 'GeneralSans',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15.sp,
-                      letterSpacing: 1.0.sp,
-                    ),
-                  ),
+                  child: _sending
+                      ? SizedBox(
+                          height: 20.r,
+                          width: 20.r,
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(AppColors.paper),
+                          ),
+                        )
+                      : Text(
+                          'SEND OTP',
+                          style: TextStyle(
+                            fontFamily: 'GeneralSans',
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15.sp,
+                            letterSpacing: 1.0.sp,
+                          ),
+                        ),
                 ),
               ),
             ),
