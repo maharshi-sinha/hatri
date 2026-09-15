@@ -6,9 +6,11 @@ import '../../backend/api/http_client.dart';
 import '../../backend/api/makers_api.dart';
 import '../../backend/services/auth_service.dart';
 import '../../backend/services/avatar_upload_service.dart';
+import '../../backend/services/events_service.dart';
 import '../../backend/services/user_service.dart';
 import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/events/bloc/events_bloc.dart';
+import '../repositories/backend_event_repository.dart';
 import '../repositories/community_repository.dart';
 import '../repositories/creator_repository.dart';
 import '../repositories/event_repository.dart';
@@ -35,13 +37,20 @@ void init() {
   sl.registerLazySingleton<AvatarUploadService>(
     () => AvatarUploadService(http: sl<HttpClient>(), auth: sl<AuthService>()),
   );
+  sl.registerLazySingleton<EventsService>(
+    () => EventsService(api: sl<EventsApi>()),
+  );
 
   // ─── Blocs ───
   sl.registerFactory(() => EventsBloc(repository: sl()));
   sl.registerFactory(() => CommunitiesBloc(repository: sl()));
 
-  // ─── Repositories (still mock — replaced with real services in F1c) ───
-  sl.registerLazySingleton<EventRepository>(() => MockEventRepository());
+  // ─── Repositories ───
+  // Events: real backend, with tiered fallback (API → cache → mock).
+  sl.registerLazySingleton<EventRepository>(
+    () => BackendEventRepository(events: sl<EventsService>()),
+  );
+  // Communities + creators: still mock for now. Backend endpoints not built.
   sl.registerLazySingleton<CommunityRepository>(() => MockCommunityRepository());
   sl.registerLazySingleton<CreatorRepository>(() => MockCreatorRepository());
 }
