@@ -54,7 +54,7 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 3-segment progress: [fuchsia] [muted] [muted] — same metrics as interests
+                      // 4-segment progress: [fuchsia] [muted] [muted] [muted]
                       Row(
                         children: [
                           Expanded(
@@ -62,6 +62,16 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
                               height: 3,
                               decoration: BoxDecoration(
                                 color: AppColors.accentPink,
+                                borderRadius: BorderRadius.circular(2.r),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 4.r),
+                          Expanded(
+                            child: Container(
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: AppColors.border,
                                 borderRadius: BorderRadius.circular(2.r),
                               ),
                             ),

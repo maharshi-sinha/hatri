@@ -101,6 +101,16 @@ class _InterestSelectionScreenState extends State<InterestSelectionScreen> {
                           ),
                         ),
                       ),
+                      SizedBox(width: 4.r),
+                      Expanded(
+                        child: Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: AppColors.border,
+                            borderRadius: BorderRadius.circular(2.r),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(height: 24.r),
