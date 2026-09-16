@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -5,10 +7,15 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../backend/api/api_exception.dart';
+import '../../backend/models/ticket_models.dart';
+import '../../backend/services/events_service.dart';
+import '../../backend/services/tickets_service.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/models/models.dart';
 import '../../core/repositories/creator_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/design/hatri_snack.dart';
 import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
 import '../creators/creator_profile_screen.dart';
@@ -29,7 +36,10 @@ class EventDetailsScreen extends StatefulWidget {
 }
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
-  bool _isRsvpd = false;
+  /// Backend ticket for this user + event, or null if none.
+  ApiTicket? _ticket;
+  bool _isClaiming = false;
+  bool get _isRsvpd => _ticket?.status == TicketStatus.confirmed;
   bool get _isSaved => SavedEventsStore.instance.isSaved(event.id);
 
   bool _loadingOrganizer = true;
@@ -38,13 +48,44 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   final ScrollController _scrollController = ScrollController();
   double _collapsedTitleOpacity = 0;
 
-  Event get event => widget.event;
+  /// Enriched copy of [widget.event] once the /events/:id detail endpoint
+  /// returns. Falls back to the card data passed from the list until then.
+  Event? _rich;
+
+  Event get event => _rich ?? widget.event;
 
   @override
   void initState() {
     super.initState();
     _loadOrganizer();
+    _loadRichDetail();
+    _loadMyTicket();
     _scrollController.addListener(_onScroll);
+  }
+
+  /// Fetches my ticket for this event so the CTA renders in the right state
+  /// (GET TICKET / VIEW TICKET). Silent failure → assume no ticket.
+  Future<void> _loadMyTicket() async {
+    try {
+      final t = await sl<TicketsService>().myTicketFor(widget.event.id);
+      if (!mounted) return;
+      setState(() => _ticket = t);
+    } catch (_) {
+      // Treat as no-ticket-yet.
+    }
+  }
+
+  /// Fire-and-forget: fetch full detail (description, real counts, maker)
+  /// and swap in when it lands. Silent failure so the screen still renders
+  /// off card data.
+  Future<void> _loadRichDetail() async {
+    try {
+      final rich = await sl<EventsService>().getById(widget.event.id);
+      if (!mounted) return;
+      setState(() => _rich = rich);
+    } catch (_) {
+      // Card data continues to render.
+    }
   }
 
   @override
@@ -80,34 +121,108 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  void _toggleSaved() {
+  Future<void> _toggleSaved() async {
     HapticFeedback.selectionClick();
+    // Optimistic local flip — snappy UI.
+    final wasSaved = _isSaved;
     SavedEventsStore.instance.toggle(event.id);
     setState(() {});
+    // Best-effort backend sync. On failure, revert local so the two agree.
+    try {
+      if (wasSaved) {
+        await sl<EventsService>().unsave(event.id);
+      } else {
+        await sl<EventsService>().save(event.id);
+      }
+    } catch (_) {
+      SavedEventsStore.instance.toggle(event.id);
+      if (mounted) setState(() {});
+    }
   }
 
+  /// Single dispatcher for the CTA button. Behavior:
+  ///  * Have a confirmed ticket    → open reveal screen (no claim).
+  ///  * Paid event, no ticket      → coming-soon snackbar (Razorpay is v2).
+  ///  * Free event, no ticket      → confirmation sheet → POST rsvp → reveal.
   Future<void> _handleRsvp() async {
     HapticFeedback.mediumImpact();
+
+    // Already have a ticket → skip confirmation, jump straight to the
+    // finished-ticket state (no printer chug on re-views).
     if (_isRsvpd) {
-      setState(() => _isRsvpd = false);
+      await _openReveal(skipAnimation: true);
       return;
     }
-    // Paid events with tiers → pick tier + qty + mock pay, then print ticket.
-    TicketOrder? order;
-    if (!event.isFree && event.tiers.isNotEmpty) {
-      order = await showTicketTierSheet(context, event);
-      if (order == null || !mounted) return; // user dismissed sheet
+
+    if (!event.isFree) {
+      HatriSnack.show(
+        context,
+        'paid events launch in v2 — free ones work today',
+        vibe: SnackVibe.info,
+        emoji: '⏳',
+      );
+      return;
     }
-    setState(() => _isRsvpd = true);
+
+    final confirmed = await _showConfirmSheet();
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isClaiming = true);
+    try {
+      final ticket = await sl<TicketsService>().rsvp(event.id);
+      if (!mounted) return;
+      setState(() {
+        _ticket = ticket;
+        _isClaiming = false;
+      });
+      await _openReveal();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isClaiming = false);
+      HatriSnack.show(
+        context,
+        _friendlyRsvpError(e),
+        vibe: SnackVibe.info,
+        emoji: '⚠️',
+      );
+    }
+  }
+
+  Future<void> _openReveal({bool skipAnimation = false}) async {
     await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (_) => TicketRevealScreen(
           event: event,
-          tier: order?.tier,
-          quantity: order?.quantity ?? 1,
+          ticket: _ticket,
+          skipAnimation: skipAnimation,
         ),
       ),
     );
+    // On return, refetch ticket — the user may have cancelled from reveal.
+    if (mounted) _loadMyTicket();
+  }
+
+  Future<bool?> _showConfirmSheet() {
+    return showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: AppColors.ground,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(Corners.lg.toDouble())),
+      ),
+      builder: (ctx) => _RsvpConfirmSheet(event: event),
+    );
+  }
+
+  String _friendlyRsvpError(ApiException e) {
+    if (e is NetworkException) return 'no network. try again.';
+    if (e is UnauthorizedException) return 'sign in to claim tickets.';
+    if (e is ClientException) {
+      if (e.statusCode == 409) return 'sold out.';
+      return e.message;
+    }
+    return 'could not claim ticket. try again.';
   }
 
   Future<void> _openOrganizerProfile() async {
@@ -1063,12 +1178,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     offset: Offset(4.r, 4.r),
                     radius: Corners.md,
                     child: GestureDetector(
-                      onTap: _handleRsvp,
+                      onTap: (_isClaiming || (!event.isFree && !_isRsvpd) || event.isSoldOut)
+                          ? null
+                          : _handleRsvp,
                       child: Container(
                         height: 56.r,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: _isRsvpd ? Colors.transparent : eventColor,
+                          color: _isRsvpd
+                              ? Colors.transparent
+                              : (event.isSoldOut || (!event.isFree)
+                                  ? AppColors.surfaceRaised
+                                  : eventColor),
                           border: Border.all(color: eventColor, width: 1.8),
                           borderRadius: BorderRadius.circular(Corners.md),
                         ),
@@ -1076,19 +1197,44 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (_isRsvpd)
+                            if (_isClaiming)
+                              SizedBox(
+                                height: 18.r,
+                                width: 18.r,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(onEvent),
+                                ),
+                              )
+                            else if (_isRsvpd)
                               Icon(Icons.check_rounded, color: eventColor, size: 20.r)
+                            else if (event.isSoldOut)
+                              Icon(Icons.block_rounded, color: AppColors.muted, size: 18.r)
+                            else if (!event.isFree)
+                              Icon(Icons.schedule_rounded, color: AppColors.muted, size: 18.r)
                             else
                               Icon(Icons.confirmation_number_rounded, color: onEvent, size: 18.r),
                             SizedBox(width: 8.r),
                             Text(
-                              _isRsvpd ? 'SECURED' : 'GET TICKET',
+                              _isClaiming
+                                  ? 'CLAIMING…'
+                                  : _isRsvpd
+                                      ? 'VIEW TICKET'
+                                      : event.isSoldOut
+                                          ? 'SOLD OUT'
+                                          : (!event.isFree)
+                                              ? 'COMING SOON'
+                                              : 'GET TICKET',
                               style: TextStyle(
                                 fontFamily: 'GeneralSans',
                                 fontWeight: FontWeight.w800,
                                 fontSize: 15.sp,
                                 letterSpacing: 1.2.sp,
-                                color: _isRsvpd ? eventColor : onEvent,
+                                color: _isRsvpd
+                                    ? eventColor
+                                    : (event.isSoldOut || (!event.isFree))
+                                        ? AppColors.muted
+                                        : onEvent,
                               ),
                             ),
                           ],
@@ -1709,6 +1855,8 @@ class _ShareSheet extends StatelessWidget {
 
   Future<void> _share(BuildContext context) async {
     await Share.share(_shareText, subject: event.title);
+    // Fire-and-forget backend tracking so popularity reflects reality.
+    unawaited(sl<EventsService>().share(event.id).catchError((_) => 0));
     if (context.mounted) Navigator.pop(context);
   }
 
@@ -1919,6 +2067,169 @@ class _FlexPreview extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------- RSVP confirmation sheet ----------------
+
+/// Two-tap confirmation gate. Prevents accidental claims + gives the user a
+/// place to bail out. Returns true when the user confirms.
+class _RsvpConfirmSheet extends StatelessWidget {
+  final Event event;
+  const _RsvpConfirmSheet({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24.r, 20.r, 24.r, 20.r),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 40.r,
+              height: 4.r,
+              margin: EdgeInsets.only(bottom: 20.r),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+            Text(
+              'CLAIM YOUR SPOT',
+              style: TextStyle(
+                fontFamily: 'GeneralSans',
+                fontWeight: FontWeight.w800,
+                fontSize: 12.sp,
+                letterSpacing: 1.6.sp,
+                color: AppColors.fuchsia,
+              ),
+            ),
+            SizedBox(height: 8.r),
+            Text(
+              event.title,
+              style: TextStyle(
+                fontFamily: 'ClashDisplay',
+                fontWeight: FontWeight.w800,
+                fontSize: 28.sp,
+                height: 1.05,
+                letterSpacing: -0.6.sp,
+                color: AppColors.paper,
+              ),
+            ),
+            SizedBox(height: 4.r),
+            Text(
+              '${DateFormat('EEE, MMM d').format(event.date)} · ${event.time}',
+              style: TextStyle(
+                fontFamily: 'GeneralSans',
+                fontWeight: FontWeight.w500,
+                fontSize: 14.sp,
+                color: AppColors.muted,
+              ),
+            ),
+            if (event.venue.isNotEmpty) ...[
+              SizedBox(height: 2.r),
+              Text(
+                event.venue,
+                style: TextStyle(
+                  fontFamily: 'GeneralSans',
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13.sp,
+                  color: AppColors.muted,
+                ),
+              ),
+            ],
+            SizedBox(height: 20.r),
+            Container(
+              padding: EdgeInsets.all(14.r),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(Corners.md),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline_rounded,
+                      size: 18.r, color: AppColors.muted),
+                  SizedBox(width: 10.r),
+                  Expanded(
+                    child: Text(
+                      'One free ticket. Cancel any time before the event.',
+                      style: TextStyle(
+                        fontFamily: 'GeneralSans',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13.sp,
+                        height: 1.4,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20.r),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context, false),
+                    child: Container(
+                      height: 52.r,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceRaised,
+                        border: Border.all(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(Corners.md),
+                      ),
+                      child: Text(
+                        'CANCEL',
+                        style: TextStyle(
+                          fontFamily: 'GeneralSans',
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.sp,
+                          letterSpacing: 1.2.sp,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.r),
+                Expanded(
+                  flex: 2,
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.pop(context, true);
+                    },
+                    child: Container(
+                      height: 52.r,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.fuchsia,
+                        borderRadius: BorderRadius.circular(Corners.md),
+                      ),
+                      child: Text(
+                        'CONFIRM & CLAIM',
+                        style: TextStyle(
+                          fontFamily: 'GeneralSans',
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.sp,
+                          letterSpacing: 1.2.sp,
+                          color: AppColors.paper,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

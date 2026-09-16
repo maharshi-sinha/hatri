@@ -102,6 +102,8 @@ class ApiEventDetail {
   final int shares;
   final int views;
   final int popularityScore;
+  final int? capacity;
+  final int ticketCount;
   final ApiMakerRef? maker;
   final DateTime createdAt;
 
@@ -131,6 +133,8 @@ class ApiEventDetail {
     required this.shares,
     required this.views,
     required this.popularityScore,
+    required this.capacity,
+    required this.ticketCount,
     required this.maker,
     required this.createdAt,
   });
@@ -163,6 +167,8 @@ class ApiEventDetail {
         shares: json['shares'] as int? ?? 0,
         views: json['views'] as int? ?? 0,
         popularityScore: json['popularityScore'] as int? ?? 0,
+        capacity: json['capacity'] as int?,
+        ticketCount: json['ticketCount'] as int? ?? 0,
         maker: json['maker'] == null
             ? null
             : ApiMakerRef.fromJson(json['maker'] as Map<String, dynamic>),

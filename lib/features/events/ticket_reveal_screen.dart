@@ -6,6 +6,7 @@ import 'package:lottie/lottie.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../backend/models/ticket_models.dart';
 import '../../core/notifications/notifications_store.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/models.dart';
@@ -26,6 +27,11 @@ class TicketRevealScreen extends StatefulWidget {
   final TicketTier? tier;
   final int quantity;
 
+  /// Real backend-issued ticket. When present, [ApiTicket.qrCode] powers
+  /// the QR — that's the value the door scanner will read. When null the
+  /// screen falls back to legacy per-event id (dev only).
+  final ApiTicket? ticket;
+
   /// When true, jumps straight to the finished-ticket state (no printer
   /// animation, no sound, no confetti). Used when re-viewing a saved ticket
   /// from My Tickets so the printer chug doesn't replay every time.
@@ -36,6 +42,7 @@ class TicketRevealScreen extends StatefulWidget {
     required this.event,
     this.tier,
     this.quantity = 1,
+    this.ticket,
     this.skipAnimation = false,
   });
 
@@ -387,7 +394,8 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
                           alignment: Alignment.center,
                           children: [
                             QrImageView(
-                              data: 'hatri://ticket/${widget.event.id}',
+                              data: widget.ticket?.qrCode ??
+                                  'hatri://ticket/${widget.event.id}',
                               version: QrVersions.auto,
                               size: 120.r,
                               padding: EdgeInsets.zero,

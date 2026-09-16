@@ -101,6 +101,10 @@ class Event {
   // Rupee price (paid events). null → falls back to isFree/paid label.
   final int? priceRupees;
 
+  // Capacity — null means unlimited. Set via organizer dashboard.
+  final int? capacity;
+  final int ticketCount;
+
   // Purchasable tiers for paid events. null/empty → single-tier fallback.
   final List<TicketTier> tiers;
 
@@ -131,7 +135,11 @@ class Event {
     this.attendees = const [],
     this.priceRupees,
     this.tiers = const [],
+    this.capacity,
+    this.ticketCount = 0,
   });
+
+  bool get isSoldOut => capacity != null && ticketCount >= capacity!;
 
   /// Label used in bottom CTA — "FREE", "₹250", or "PAID" fallback.
   String get priceLabel {

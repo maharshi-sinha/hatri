@@ -124,7 +124,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     try {
       await sl<AuthService>().verifyOtp(_rawPhone, _code);
       if (!mounted) return;
-      context.go('/name');
+      // Returning user (already has a display name) → straight to home.
+      // New signup → run through onboarding.
+      final user = sl<AuthService>().user;
+      final isReturning = user?.displayName != null &&
+          user!.displayName!.trim().isNotEmpty;
+      context.go(isReturning ? '/' : '/name');
     } on ApiException catch (e) {
       if (!mounted) return;
       HatriSnack.show(

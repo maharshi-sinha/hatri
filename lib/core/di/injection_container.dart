@@ -4,9 +4,11 @@ import '../../backend/api/auth_api.dart';
 import '../../backend/api/events_api.dart';
 import '../../backend/api/http_client.dart';
 import '../../backend/api/makers_api.dart';
+import '../../backend/api/tickets_api.dart';
 import '../../backend/services/auth_service.dart';
 import '../../backend/services/avatar_upload_service.dart';
 import '../../backend/services/events_service.dart';
+import '../../backend/services/tickets_service.dart';
 import '../../backend/services/user_service.dart';
 import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/events/bloc/events_bloc.dart';
@@ -26,6 +28,7 @@ void init() {
   sl.registerLazySingleton<AuthApi>(() => AuthApi(sl<HttpClient>()));
   sl.registerLazySingleton<EventsApi>(() => EventsApi(sl<HttpClient>()));
   sl.registerLazySingleton<MakersApi>(() => MakersApi(sl<HttpClient>()));
+  sl.registerLazySingleton<TicketsApi>(() => TicketsApi(sl<HttpClient>()));
 
   // ─── Services ───
   sl.registerLazySingleton<AuthService>(
@@ -39,6 +42,9 @@ void init() {
   );
   sl.registerLazySingleton<EventsService>(
     () => EventsService(api: sl<EventsApi>()),
+  );
+  sl.registerLazySingleton<TicketsService>(
+    () => TicketsService(api: sl<TicketsApi>()),
   );
 
   // ─── Blocs ───

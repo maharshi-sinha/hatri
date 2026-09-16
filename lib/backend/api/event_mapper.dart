@@ -56,6 +56,8 @@ class EventMapper {
       lat: d.latitude,
       lng: d.longitude,
       priceRupees: d.priceMin == 0 ? null : priceR,
+      capacity: d.capacity,
+      ticketCount: d.ticketCount,
     );
   }
 
