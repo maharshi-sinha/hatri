@@ -58,6 +58,13 @@ class EventsService {
     return EventMapper.fromDetail(detail);
   }
 
+  /// Slug-keyed fetch. Used by the deeplink handler when the app opens via
+  /// `hatri://event/<slug>` or a Universal Link.
+  Future<Event> getBySlug(String slug) async {
+    final detail = await _api.getBySlug(slug);
+    return EventMapper.fromDetail(detail);
+  }
+
   Future<int> save(String id) async {
     final res = await _api.save(id);
     return res.saves;

@@ -21,7 +21,9 @@ import '../../features/auth/notification_permission_screen.dart';
 import '../../features/auth/location_permission_screen.dart';
 import '../../features/auth/celebration_screen.dart';
 
-final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+// Backwards-compat alias — don't use in new code.
+final GlobalKey<NavigatorState> _rootNavigatorKey = rootNavigatorKey;
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(

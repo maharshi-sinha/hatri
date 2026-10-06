@@ -42,6 +42,18 @@ class EventsApi {
     }
   }
 
+  /// Slug-keyed detail. Powers deeplink arrival — the hatri:// scheme and
+  /// share URLs carry the slug, not the id. No view increment on this path.
+  Future<ApiEventDetail> getBySlug(String slug) async {
+    try {
+      final res = await _http.dio
+          .get<Map<String, dynamic>>('$_base/by-slug/$slug');
+      return ApiEventDetail.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw _http.translate(e);
+    }
+  }
+
   /// Requires auth.
   Future<SaveResult> save(String id) async {
     try {

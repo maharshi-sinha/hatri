@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'core/deeplinks/deeplink_handler.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/responsive/responsive.dart';
 import 'core/routing/app_router.dart';
@@ -29,6 +30,13 @@ void main() async {
   di.init();
   await di.bootAuth();
   runApp(const HatriApp());
+
+  // After the first frame so the navigator is mounted. Owns itself for the
+  // lifetime of the process — the handler listens to the AppLinks URI stream
+  // forever and never needs disposal in a running app.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    DeeplinkHandler(rootNavigatorKey: rootNavigatorKey).start();
+  });
 }
 
 class HatriApp extends StatelessWidget {
