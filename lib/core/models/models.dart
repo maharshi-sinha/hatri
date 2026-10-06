@@ -62,6 +62,7 @@ class TicketTier {
 
 class Event {
   final String id;
+  final String slug;
   final String title;
   final String description;
   final String coverUrl;
@@ -110,6 +111,7 @@ class Event {
 
   Event({
     required this.id,
+    this.slug = '',
     required this.title,
     required this.description,
     required this.coverUrl,

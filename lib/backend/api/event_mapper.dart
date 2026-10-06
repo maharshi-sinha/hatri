@@ -13,6 +13,7 @@ class EventMapper {
     final priceR = c.priceMin ~/ 100; // paise → rupees
     return Event(
       id: c.id,
+      slug: c.slug,
       title: c.title,
       description: '', // detail-only field
       coverUrl: c.coverUrl ?? _fallbackCover(c.category),
@@ -36,6 +37,7 @@ class EventMapper {
     final priceR = d.priceMin ~/ 100;
     return Event(
       id: d.id,
+      slug: d.slug,
       title: d.title,
       description: d.description ?? '',
       coverUrl: d.coverUrl ?? _fallbackCover(d.category),

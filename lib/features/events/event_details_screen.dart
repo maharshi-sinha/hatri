@@ -1850,7 +1850,12 @@ class _ShareSheet extends StatelessWidget {
   String get _shareText {
     final date = DateFormat('EEE, MMM d').format(event.date);
     final prefix = isRsvpd ? "I'm going to " : "Check this out: ";
-    return "$prefix${event.title} 🎟️\n$date · ${event.time} · ${event.venue}\n\nvia Hatri. The digital haat";
+    // Build a universal URL. Opens the event preview on hatri.online, bounces
+    // into the Hatri app on devices with the app installed (handled by F3b/c).
+    final url = event.slug.isNotEmpty
+        ? 'https://hatri.online/e/${event.slug}'
+        : 'https://hatri.online';
+    return "$prefix${event.title} 🎟️\n$date · ${event.time} · ${event.venue}\n\n$url";
   }
 
   Future<void> _share(BuildContext context) async {
