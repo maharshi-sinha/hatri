@@ -94,6 +94,9 @@ dependencies:
   path_provider: ^2.1.4
   shared_preferences: ^2.5.5
 
+  # MSG91 official Flutter SDK for mobile OTP (SMS without DLT).
+  sendotp_flutter_sdk: ^0.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

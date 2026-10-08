@@ -37,6 +37,20 @@ class AuthApi {
     }
   }
 
+  /// MSG91 widget sign-in: send the short-lived accessToken the widget
+  /// handed us; backend confirms it with MSG91 and issues our JWT.
+  Future<OtpVerifyResult> verifyMsg91(String accessToken) async {
+    try {
+      final res = await _http.dio.post<Map<String, dynamic>>(
+        '$_base/msg91/verify',
+        data: {'accessToken': accessToken},
+      );
+      return OtpVerifyResult.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw _http.translate(e);
+    }
+  }
+
   /// Rotate the token pair using the current refresh token.
   Future<RefreshResult> refresh(String refreshToken) async {
     try {

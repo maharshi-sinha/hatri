@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../backend/api/api_exception.dart';
-import '../../backend/services/auth_service.dart';
+import '../../backend/services/msg91_widget_service.dart';
 import '../../core/analytics/analytics_service.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/responsive/responsive.dart';
@@ -42,14 +42,19 @@ class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
     if (_sending) return;
     HapticFeedback.mediumImpact();
     setState(() => _sending = true);
-    // Backend expects E.164 with no spaces.
+    // E.164 for both analytics and the MSG91 widget (which internally strips
+    // the '+').
     final phone = '+91${_phoneController.text}';
     try {
       unawaited(sl<AnalyticsService>().signInStarted());
       unawaited(sl<AnalyticsService>().otpRequested());
-      await sl<AuthService>().requestOtp(phone);
+      // MSG91 widget path: client-side OTP send, no DLT template required.
+      await sl<Msg91WidgetService>().sendOtp(phone);
       if (!mounted) return;
       context.push('/otp', extra: phone);
+    } on Msg91WidgetException catch (e) {
+      if (!mounted) return;
+      HatriSnack.show(context, _friendlyWidgetError(e), vibe: SnackVibe.info, emoji: '📵');
     } on ApiException catch (e) {
       if (!mounted) return;
       HatriSnack.show(context, _friendlyError(e), vibe: SnackVibe.info, emoji: '📵');
@@ -64,6 +69,17 @@ class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
       return 'chill, too many OTPs. try in a minute.';
     }
     return e.message;
+  }
+
+  String _friendlyWidgetError(Msg91WidgetException e) {
+    final m = e.message.toLowerCase();
+    if (m.contains('network') || m.contains('failed to load')) {
+      return 'no network. try again in a bit.';
+    }
+    if (m.contains('rate') || m.contains('limit')) {
+      return 'chill, too many OTPs. try in a minute.';
+    }
+    return 'could not send OTP. try again.';
   }
 
   @override

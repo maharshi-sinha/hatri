@@ -119,6 +119,20 @@ class AuthService {
     unawaited(sl<AnalyticsService>().signInCompleted());
   }
 
+  /// MSG91 widget path: the client already verified the OTP via the widget
+  /// and received a short-lived accessToken. We exchange it with the backend
+  /// for our JWT pair, then mirror the state transitions [verifyOtp] does.
+  Future<void> signInWithMsg91Token(String accessToken, {String? phone}) async {
+    final result = await _api.verifyMsg91(accessToken);
+    _accessToken = result.accessToken;
+    _refreshToken = result.refreshToken;
+    _user = result.user;
+    await _persist();
+    state.value = AuthState(AuthStatus.signedIn, _user);
+    unawaited(sl<AnalyticsService>().identify(userId: _user!.id, phone: phone));
+    unawaited(sl<AnalyticsService>().signInCompleted());
+  }
+
   /// Called by the sign-out button.
   Future<void> signOut() async {
     final rt = _refreshToken;

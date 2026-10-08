@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../backend/api/api_exception.dart';
 import '../../backend/services/auth_service.dart';
+import '../../backend/services/msg91_widget_service.dart';
 import '../../core/analytics/analytics_service.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/responsive/responsive.dart';
@@ -123,7 +124,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     FocusScope.of(context).unfocus();
     setState(() => _verifying = true);
     try {
-      await sl<AuthService>().verifyOtp(_rawPhone, _code);
+      // MSG91 widget verifies the OTP client-side and returns a short-lived
+      // accessToken. We then exchange that with the backend for our JWT.
+      final accessToken = await sl<Msg91WidgetService>().verifyOtp(_code);
+      await sl<AuthService>()
+          .signInWithMsg91Token(accessToken, phone: _rawPhone);
       unawaited(sl<AnalyticsService>().otpSubmitted(success: true));
       if (!mounted) return;
       // Returning user (already has a display name) → straight to home.
@@ -132,6 +137,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       final isReturning = user?.displayName != null &&
           user!.displayName!.trim().isNotEmpty;
       context.go(isReturning ? '/' : '/name');
+    } on Msg91WidgetException catch (e) {
+      unawaited(sl<AnalyticsService>().otpSubmitted(success: false));
+      if (!mounted) return;
+      HatriSnack.show(
+        context,
+        _friendlyWidgetError(e),
+        vibe: SnackVibe.info,
+        emoji: '❌',
+      );
+      for (final c in _controllers) {
+        c.clear();
+      }
+      FocusScope.of(context).requestFocus(_focus.first);
+      setState(() {});
+      return;
     } on ApiException catch (e) {
       unawaited(sl<AnalyticsService>().otpSubmitted(success: false));
       if (!mounted) return;
@@ -157,7 +177,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     HapticFeedback.selectionClick();
     setState(() => _resending = true);
     try {
-      await sl<AuthService>().requestOtp(_rawPhone);
+      // Resend also goes through the MSG91 widget so DLT stays bypassed.
+      await sl<Msg91WidgetService>().sendOtp(_rawPhone);
       _startCountdown();
       if (!mounted) return;
       HatriSnack.show(
@@ -165,6 +186,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         'new code, on the way',
         vibe: SnackVibe.info,
         emoji: '📩',
+      );
+    } on Msg91WidgetException catch (e) {
+      if (!mounted) return;
+      HatriSnack.show(
+        context,
+        _friendlyWidgetError(e),
+        vibe: SnackVibe.info,
+        emoji: '📵',
       );
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -177,6 +206,18 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     } finally {
       if (mounted) setState(() => _resending = false);
     }
+  }
+
+  String _friendlyWidgetError(Msg91WidgetException e) {
+    final m = e.message.toLowerCase();
+    if (m.contains('network') || m.contains('failed to load')) {
+      return 'no network. try again.';
+    }
+    if (m.contains('invalid') || m.contains('mismatch')) {
+      return 'wrong code. try again.';
+    }
+    if (m.contains('expired')) return 'code expired. tap resend.';
+    return 'could not verify. try again.';
   }
 
   String _friendlyError(ApiException e) {
@@ -294,15 +335,22 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         ),
                       ),
                       SizedBox(height: 32.r),
-                      // Responsive code boxes — Row of 6 Expanded cells
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          for (int i = 0; i < _len; i++) ...[
-                            Expanded(child: _codeBox(i)),
-                            if (i < _len - 1) SizedBox(width: 8.r),
+                      // Responsive code boxes — Row of 6 Expanded cells.
+                      // AutofillGroup lets iOS's one-tap SMS code suggestion
+                      // (above the keyboard) populate the first box, which
+                      // our _onCharChanged distributes across all 6. On
+                      // Android API 26+ the oneTimeCode hint is picked up by
+                      // Google Autofill from any arriving SMS.
+                      AutofillGroup(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            for (int i = 0; i < _len; i++) ...[
+                              Expanded(child: _codeBox(i)),
+                              if (i < _len - 1) SizedBox(width: 8.r),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                       SizedBox(height: 24.r),
                       // Resend row — timer OR button
@@ -451,6 +499,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               cursorWidth: 2,
               cursorHeight: 26.sp,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              // iOS: oneTimeCode surfaces the "123456 from Messages" chip
+              //      above the keyboard. On the first field, pasting the full
+              //      code lets _onCharChanged scatter it across all six.
+              // Android: the OS forwards oneTimeCode to Google Autofill which
+              //      offers to fill from the most recent SMS.
+              autofillHints: const [AutofillHints.oneTimeCode],
               onChanged: (v) => _onCharChanged(i, v),
               style: TextStyle(
                 fontFamily: 'ClashDisplay',
