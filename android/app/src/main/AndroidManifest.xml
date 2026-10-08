@@ -14,13 +14,22 @@
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
-      <!-- hatri:// custom scheme deeplinks (F3b). F3c will add App Links
-           for https://hatri.online/e/* with android:autoVerify="true". -->
+      <!-- hatri:// custom scheme deeplinks (F3b). -->
       <intent-filter>
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="hatri"/>
+      </intent-filter>
+      <!-- Android App Links (F3c): verified https deeplinks for event detail.
+           autoVerify="true" makes the OS fetch /.well-known/assetlinks.json
+           from hatri.online on first install and, if the SHA256 matches,
+           route the URL directly to this activity instead of the browser. -->
+      <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="https" android:host="hatri.online" android:pathPrefix="/e/"/>
       </intent-filter>
     </activity>
     <!-- Don't delete the meta-data below.
