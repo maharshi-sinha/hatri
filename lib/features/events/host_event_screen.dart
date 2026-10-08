@@ -1,20 +1,31 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 
+import '../../backend/api/api_exception.dart';
+import '../../backend/services/events_service.dart';
+import '../../core/analytics/analytics_service.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/models/models.dart';
 import '../../core/repositories/creator_repository.dart';
 import '../../core/repositories/mock_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/components.dart';
+import '../../shared/design/hatri_snack.dart';
 import '../../shared/design/motifs.dart';
 import '../../shared/widgets/event_card.dart';
 import 'bloc/events_bloc.dart';
 import 'bloc/events_event.dart';
 import '../../core/responsive/responsive.dart';
+import 'event_details_screen.dart';
 
 /// Single-page fast form for posting an event.
 /// Design goal: fillable in under a minute, live preview built-in.
@@ -37,7 +48,9 @@ class _HostEventScreenState extends State<HostEventScreen> {
   bool _isSafeVenue = false;
   final List<CreatorProfile> _lineup = [];
   String _coverUrl = _mockCovers.first;
+  File? _pickedCoverFile;
   bool _showPreview = false;
+  bool _posting = false;
 
   // Picsum seeded URLs — deterministic (same seed → same image), always 200.
   static const _mockCovers = [
@@ -173,19 +186,158 @@ class _HostEventScreenState extends State<HostEventScreen> {
     );
   }
 
-  void _post() async {
-    HapticFeedback.mediumImpact();
-    final event = _draftEvent();
-    MockRepository.mockEvents.insert(0, event);
-    context.read<EventsBloc>().add(LoadEvents());
+  /// Opens the system image picker, compresses the result to WebP, and
+  /// stores it for upload-on-post.
+  Future<void> _pickCustomCover() async {
+    HapticFeedback.selectionClick();
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        imageQuality: 90,
+      );
+      if (picked == null) return;
+      final compressed = await _compress(File(picked.path));
+      if (!mounted) return;
+      setState(() => _pickedCoverFile = compressed);
+    } catch (e) {
+      if (!mounted) return;
+      HatriSnack.show(
+        context,
+        'could not pick image. try another one.',
+        vibe: SnackVibe.info,
+        emoji: '📸',
+      );
+    }
+  }
 
-    await showDialog(
-      context: context,
-      barrierColor: AppColors.ground.withValues(alpha: 0.9),
-      builder: (_) => _PostedCelebration(event: event),
-    );
-    if (!mounted) return;
-    Navigator.pop(context);
+  /// Compresses to WebP ~0.5-1 MB; falls back to the original on failure.
+  Future<File> _compress(File src) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final out =
+          '${dir.path}/hatri_cover_${DateTime.now().millisecondsSinceEpoch}.webp';
+      final result = await FlutterImageCompress.compressAndGetFile(
+        src.absolute.path,
+        out,
+        format: CompressFormat.webp,
+        quality: 82,
+        minWidth: 1200,
+        minHeight: 800,
+      );
+      return result != null ? File(result.path) : src;
+    } catch (_) {
+      return src;
+    }
+  }
+
+  Future<void> _post() async {
+    if (_posting) return;
+    HapticFeedback.mediumImpact();
+    setState(() => _posting = true);
+    try {
+      // Upload custom cover first, if the user picked one; fall back to the
+      // selected mock URL otherwise.
+      String coverUrl = _coverUrl;
+      final file = _pickedCoverFile;
+      if (file != null) {
+        coverUrl = await sl<EventsService>().uploadCover(file);
+      }
+
+      final startAt = _combineDateTime(_date!, _time!);
+      final body = <String, dynamic>{
+        'title': _titleController.text.trim(),
+        'category': _categoryToApi(_category),
+        'citySlug': 'raipur',
+        'startAt': startAt.toUtc().toIso8601String(),
+        'venueName': _venueController.text.trim(),
+        'coverUrl': coverUrl,
+        'priceMin': _isFree ? 0 : 0, // paid events not shipped yet
+        'isSafeVenue': _isSafeVenue,
+        if (_mapsUrlController.text.trim().isNotEmpty)
+          'mapsUrl': _mapsUrlController.text.trim(),
+      };
+
+      final event = await sl<EventsService>().createEvent(body);
+      unawaited(sl<AnalyticsService>().eventCreated(
+        eventId: event.id,
+        category: event.category.name,
+        hasCover: file != null,
+      ));
+
+      // Keep the in-memory feed snappy; the server is now the source of truth
+      // but refreshing the bloc on return would be ideal in a later pass.
+      MockRepository.mockEvents.insert(0, event);
+      if (mounted) {
+        context.read<EventsBloc>().add(LoadEvents());
+      }
+
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        barrierColor: AppColors.ground.withValues(alpha: 0.9),
+        builder: (_) => _PostedCelebration(event: event),
+      );
+      if (!mounted) return;
+      // Replace the host screen with the created event's detail so the user
+      // lands on their fresh post, same as the ticket flow lands on reveal.
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => EventDetailsScreen(event: event)),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      HatriSnack.show(
+        context,
+        _friendlyError(e),
+        vibe: SnackVibe.info,
+        emoji: '⚠️',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      HatriSnack.show(
+        context,
+        'could not post event. try again.',
+        vibe: SnackVibe.info,
+        emoji: '⚠️',
+      );
+    } finally {
+      if (mounted) setState(() => _posting = false);
+    }
+  }
+
+  DateTime _combineDateTime(DateTime day, TimeOfDay t) {
+    return DateTime(day.year, day.month, day.day, t.hour, t.minute);
+  }
+
+  String _categoryToApi(EventCategory c) {
+    switch (c) {
+      case EventCategory.openMic:
+        return 'OPEN_MIC';
+      case EventCategory.fest:
+        return 'FEST';
+      case EventCategory.workshop:
+        return 'WORKSHOP';
+      case EventCategory.meetup:
+        return 'MEETUP';
+      case EventCategory.market:
+        return 'MARKET';
+      case EventCategory.clubNight:
+        return 'CLUB_NIGHT';
+      case EventCategory.other:
+        return 'OTHER';
+    }
+  }
+
+  String _friendlyError(ApiException e) {
+    if (e is NetworkException) return 'no network. try again in a bit.';
+    if (e is ClientException && e.statusCode == 401) {
+      return 'sign in to post an event.';
+    }
+    if (e is ClientException) return e.message;
+    return 'could not post event. try again.';
   }
 
   @override
@@ -455,20 +607,99 @@ class _HostEventScreenState extends State<HostEventScreen> {
   }
 
   Widget _coverPicker() {
+    final hasCustom = _pickedCoverFile != null;
     return SizedBox(
       height: 100.r,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _mockCovers.length,
+        // +1 slot for the "pick from phone" tile, and +1 for the custom
+        // preview tile when the user has picked an image.
+        itemCount: _mockCovers.length + 1 + (hasCustom ? 1 : 0),
         itemBuilder: (context, i) {
-          final url = _mockCovers[i];
-          final selected = url == _coverUrl;
+          // First tile: "pick from phone" prompt.
+          if (i == 0) {
+            return Padding(
+              padding: EdgeInsets.only(right: 10.r),
+              child: GestureDetector(
+                onTap: _pickCustomCover,
+                child: Container(
+                  width: 100.r,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(Corners.md),
+                    border: Border.all(
+                      color: AppColors.border,
+                      width: 1,
+                      style: BorderStyle.solid,
+                    ),
+                    color: AppColors.surfaceRaised,
+                  ),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_photo_alternate_outlined,
+                          color: AppColors.muted, size: 26.r),
+                      SizedBox(height: 4.r),
+                      Text(
+                        'YOUR\nPHOTO',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'GeneralSans',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 9.sp,
+                          letterSpacing: 0.8,
+                          color: AppColors.muted,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+          // Second tile when a file has been picked: preview + selected ring.
+          if (hasCustom && i == 1) {
+            return Padding(
+              padding: EdgeInsets.only(right: 10.r),
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  // Keep the file but mark it as the chosen cover by nulling
+                  // the mock selection — _post reads _pickedCoverFile first.
+                  setState(() => _coverUrl = '');
+                },
+                child: Container(
+                  width: 100.r,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(Corners.md),
+                    border: Border.all(
+                      color: _coverUrl.isEmpty
+                          ? AppColors.lime
+                          : AppColors.border,
+                      width: _coverUrl.isEmpty ? 3 : 1,
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.file(_pickedCoverFile!, fit: BoxFit.cover),
+                ),
+              ),
+            );
+          }
+          final mockIndex = i - 1 - (hasCustom ? 1 : 0);
+          final url = _mockCovers[mockIndex];
+          final selected = url == _coverUrl && _pickedCoverFile == null;
           return Padding(
             padding: EdgeInsets.only(right: 10.r),
             child: GestureDetector(
               onTap: () {
                 HapticFeedback.selectionClick();
-                setState(() => _coverUrl = url);
+                // Picking a mock resets any custom file so _post uploads
+                // nothing and uses the mock URL as the final cover.
+                setState(() {
+                  _coverUrl = url;
+                  _pickedCoverFile = null;
+                });
               },
               child: AnimatedContainer(
                 duration: Motion.fast,

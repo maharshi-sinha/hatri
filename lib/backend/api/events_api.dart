@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 
 import '../models/event_models.dart';
 import 'http_client.dart';
@@ -94,5 +97,53 @@ class EventsApi {
     } on DioException catch (e) {
       throw _http.translate(e);
     }
+  }
+
+  /// Requires auth. Creates a new event owned by the current user and
+  /// returns its full detail.
+  Future<ApiEventDetail> create(Map<String, dynamic> body) async {
+    try {
+      final res = await _http.dio.post<Map<String, dynamic>>(_base, data: body);
+      return ApiEventDetail.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw _http.translate(e);
+    }
+  }
+
+  /// Requires auth. Uploads a cover image via multipart form-data; returns
+  /// the public URL to pass as `coverUrl` to [create].
+  Future<String> uploadCover(File file) async {
+    final mime = _mimeForPath(file.path);
+    try {
+      final form = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          file.path,
+          filename: file.uri.pathSegments.last,
+          contentType: MediaType.parse(mime),
+        ),
+      });
+      final res = await _http.dio.post<Map<String, dynamic>>(
+        '$_base/cover',
+        data: form,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      final url = res.data?['url'] as String?;
+      if (url == null || url.isEmpty) {
+        throw DioException(
+          requestOptions: res.requestOptions,
+          message: 'cover upload returned no url',
+        );
+      }
+      return url;
+    } on DioException catch (e) {
+      throw _http.translate(e);
+    }
+  }
+
+  static String _mimeForPath(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
   }
 }

@@ -118,6 +118,17 @@ class AnalyticsService {
   Future<void> makerInquireTapped({required String makerId}) =>
       _track('maker_inquire_tapped', {'maker_id': makerId});
 
+  Future<void> eventCreated({
+    required String eventId,
+    required String category,
+    required bool hasCover,
+  }) =>
+      _track('event_created', {
+        'event_id': eventId,
+        'category': category,
+        'has_cover': hasCover,
+      });
+
   // ─── Internals ───────────────────────────────────────────────────────
 
   Future<void> _track(String name, [Map<String, Object>? props]) async {

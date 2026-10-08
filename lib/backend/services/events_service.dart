@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -83,6 +84,18 @@ class EventsService {
   Future<int> share(String id) async {
     final res = await _api.share(id);
     return res.shares;
+  }
+
+  /// Uploads a cover image to backend storage and returns the public URL
+  /// to pass as `coverUrl` on [createEvent].
+  Future<String> uploadCover(File file) => _api.uploadCover(file);
+
+  /// Creates an event owned by the current signed-in user and returns the
+  /// UI-ready model. Caller is responsible for navigating to the new event's
+  /// detail screen.
+  Future<Event> createEvent(Map<String, dynamic> body) async {
+    final detail = await _api.create(body);
+    return EventMapper.fromDetail(detail);
   }
 
   // ─── Cache ───

@@ -64,6 +64,7 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   jwt_decoder: ^2.0.1
   uuid: ^4.5.1
+  http_parser: ^4.0.2
 
   # ─── Firebase (push, crashes, perf) ───
   firebase_core: ^3.6.0
