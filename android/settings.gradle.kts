@@ -20,6 +20,14 @@ pluginManagement {
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "9.0.1" apply false
+    // START: FlutterFire Configuration
+    // firebase-perf gradle plugin removed: v1.4.x uses the removed Android
+    // Gradle Plugin Transform API and breaks AGP 9.x builds. We're not using
+    // Performance Monitoring yet; add it back if we start, pinned to a version
+    // that supports current AGP.
+    id("com.google.gms.google-services") version("4.3.15") apply false
+    id("com.google.firebase.crashlytics") version("2.8.1") apply false
+    // END: FlutterFire Configuration
     id("org.jetbrains.kotlin.android") version "2.3.20" apply false
 }
 

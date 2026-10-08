@@ -1,6 +1,13 @@
+import 'dart:async';
+import 'dart:ui';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'core/analytics/analytics_service.dart';
 import 'core/deeplinks/deeplink_handler.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/responsive/responsive.dart';
@@ -10,6 +17,7 @@ import 'features/communities/bloc/communities_bloc.dart';
 import 'features/communities/bloc/communities_event.dart';
 import 'features/events/bloc/events_bloc.dart';
 import 'features/events/bloc/events_event.dart';
+import 'firebase_options.dart';
 import 'flavors.dart';
 import 'shared/widgets/connection_gate.dart';
 
@@ -19,23 +27,47 @@ const String _appFlavorEnv =
     String.fromEnvironment('appFlavor', defaultValue: 'prod');
 
 void main() async {
-  final binding = WidgetsFlutterBinding.ensureInitialized();
-  // Seed the scale before the first frame so sizing read ahead of the first
-  // MediaQuery is already correct.
-  AppScale.updateFromView(binding.platformDispatcher.views.first);
-  F.appFlavor = Flavor.values.firstWhere(
-    (e) => e.name == _appFlavorEnv,
-    orElse: () => Flavor.prod,
-  );
-  di.init();
-  await di.bootAuth();
-  runApp(const HatriApp());
+  // runZonedGuarded catches async errors that FlutterError.onError misses
+  // (futures with no .catchError, timers, etc.) and funnels them to
+  // Crashlytics. Everything that touches Firebase must live inside the zone.
+  await runZonedGuarded<Future<void>>(() async {
+    final binding = WidgetsFlutterBinding.ensureInitialized();
+    // Seed the scale before the first frame so sizing read ahead of the first
+    // MediaQuery is already correct.
+    AppScale.updateFromView(binding.platformDispatcher.views.first);
+    F.appFlavor = Flavor.values.firstWhere(
+      (e) => e.name == _appFlavorEnv,
+      orElse: () => Flavor.prod,
+    );
 
-  // After the first frame so the navigator is mounted. Owns itself for the
-  // lifetime of the process — the handler listens to the AppLinks URI stream
-  // forever and never needs disposal in a running app.
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    DeeplinkHandler(rootNavigatorKey: rootNavigatorKey).start();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    // Collect crashes on every build and every platform. We'd rather see dev
+    // noise than miss a real production crash because we forgot to flip a flag.
+    // Filter the dashboard later with Crashlytics' "velocity alerts" if needed.
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+
+    di.init();
+    await di.bootAuth();
+    // Fire-and-forget: analytics init shouldn't delay first paint.
+    unawaited(di.sl<AnalyticsService>().init());
+
+    runApp(const HatriApp());
+
+    // After the first frame so the navigator is mounted. Owns itself for the
+    // lifetime of the process — the handler listens to the AppLinks URI stream
+    // forever and never needs disposal in a running app.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DeeplinkHandler(rootNavigatorKey: rootNavigatorKey).start();
+    });
+  }, (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
   });
 }
 

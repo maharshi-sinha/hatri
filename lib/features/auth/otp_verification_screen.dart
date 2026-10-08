@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../backend/api/api_exception.dart';
 import '../../backend/services/auth_service.dart';
+import '../../core/analytics/analytics_service.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
@@ -123,6 +124,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     setState(() => _verifying = true);
     try {
       await sl<AuthService>().verifyOtp(_rawPhone, _code);
+      unawaited(sl<AnalyticsService>().otpSubmitted(success: true));
       if (!mounted) return;
       // Returning user (already has a display name) → straight to home.
       // New signup → run through onboarding.
@@ -131,6 +133,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           user!.displayName!.trim().isNotEmpty;
       context.go(isReturning ? '/' : '/name');
     } on ApiException catch (e) {
+      unawaited(sl<AnalyticsService>().otpSubmitted(success: false));
       if (!mounted) return;
       HatriSnack.show(
         context,

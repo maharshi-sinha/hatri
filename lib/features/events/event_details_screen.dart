@@ -11,6 +11,7 @@ import '../../backend/api/api_exception.dart';
 import '../../backend/models/ticket_models.dart';
 import '../../backend/services/events_service.dart';
 import '../../backend/services/tickets_service.dart';
+import '../../core/analytics/analytics_service.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/models/models.dart';
 import '../../core/repositories/creator_repository.dart';
@@ -63,6 +64,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     _loadRichDetail();
     _loadMyTicket();
     _scrollController.addListener(_onScroll);
+    unawaited(sl<AnalyticsService>().eventOpened(eventId: event.id));
   }
 
   /// Fetches my ticket for this event so the CTA renders in the right state
@@ -141,6 +143,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         final wasSaved = _isSaved;
         SavedEventsStore.instance.toggle(event.id);
         setState(() {});
+        unawaited(sl<AnalyticsService>()
+            .eventSaved(eventId: event.id, saved: !wasSaved));
         // Best-effort backend sync. On failure, revert local so the two agree.
         try {
           if (wasSaved) {
@@ -196,6 +200,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     setState(() => _isClaiming = true);
     try {
       final ticket = await sl<TicketsService>().rsvp(event.id);
+      unawaited(sl<AnalyticsService>().eventRsvpd(eventId: event.id));
       if (!mounted) return;
       setState(() {
         _ticket = ticket;
@@ -284,6 +289,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   void _openShare() {
     HapticFeedback.selectionClick();
+    unawaited(sl<AnalyticsService>().shareOpened(eventId: event.id));
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1950,6 +1956,7 @@ class _ShareSheet extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: Insets.lg),
             child: PrimaryButton(
+              
               label: 'Share',
               svgIcon: 'assets/icons/Upload.svg',
               expand: true,

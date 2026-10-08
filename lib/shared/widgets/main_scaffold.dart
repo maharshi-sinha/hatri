@@ -69,46 +69,31 @@ class MainScaffold extends StatelessWidget {
       );
     }
 
-    // ─── Android: standard Material BottomNavigationBar ─────────────────
+    // ─── Android: floating glass pill matching the iOS silhouette ───────
+    // Visual twin of _IOSLiquidNav but powered by BackdropFilter instead of
+    // the liquid_glass_renderer shaders (which fail to compile for Skia and
+    // are heavier than needed on Android). Same geometry, same indicator,
+    // tap-to-switch only (we skip the drag-to-switch gesture to keep the
+    // Android bar simple — matches platform convention).
     return Scaffold(
-      body: child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selected,
-        onTap: (i) => _onTap(i, context),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.graphite,
-        selectedItemColor: AppColors.fuchsia,
-        unselectedItemColor: AppColors.muted,
-        selectedLabelStyle: TextStyle(
-          fontFamily: 'GeneralSans',
-          fontWeight: FontWeight.w700,
-          fontSize: 11.sp,
+      extendBody: true,
+      body: MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          padding: MediaQuery.of(context).padding.copyWith(
+            bottom: MediaQuery.of(context).padding.bottom + 84.r,
+          ),
         ),
-        unselectedLabelStyle: TextStyle(
-          fontFamily: 'GeneralSans',
-          fontWeight: FontWeight.w500,
-          fontSize: 11.sp,
-        ),
-        items: [
-          for (final tab in _navTabs)
-            BottomNavigationBarItem(
-              icon: _materialTabIcon(tab.icon, AppColors.muted),
-              activeIcon: _materialTabIcon(tab.icon, AppColors.fuchsia),
-              label: tab.label,
-            ),
-        ],
+        child: child,
       ),
-    );
-  }
-
-  Widget _materialTabIcon(String asset, Color tint) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: SvgPicture.asset(
-        asset,
-        width: 22,
-        height: 22,
-        colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: 8.r),
+          child: _AndroidGlassNav(
+            selectedIndex: selected,
+            onTap: (i) => _onTap(i, context),
+          ),
+        ),
       ),
     );
   }
@@ -216,6 +201,130 @@ class _IOSLiquidNav extends StatelessWidget {
           HapticFeedback.lightImpact();
           onTap();
         },
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              tab.icon,
+              width: 22.r,
+              height: 22.r,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            ),
+            SizedBox(height: 3.r),
+            Text(
+              tab.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'GeneralSans',
+                fontSize: 10.sp,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Android — frosted glass nav via BackdropFilter (shader-free)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AndroidGlassNav extends StatelessWidget {
+  const _AndroidGlassNav({required this.selectedIndex, required this.onTap});
+
+  final int selectedIndex;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tabCount = _navTabs.length;
+    // Horizontal alignment for the selected pill: maps tab index -> [-1, 1]
+    // so AnimatedAlign + FractionallySizedBox can slide it between slots.
+    final align = Alignment(
+      tabCount <= 1 ? 0 : (selectedIndex / (tabCount - 1)) * 2 - 1,
+      0,
+    );
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 18.r),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32.r),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            height: 64.r,
+            padding: EdgeInsets.symmetric(horizontal: 4.r),
+            decoration: BoxDecoration(
+              // Dark-mode frosted tint. Alpha kept moderate so content behind
+              // reads through the blur, mirroring the iOS Liquid Glass look.
+              color: AppColors.graphite.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(32.r),
+              border: Border.all(
+                color: AppColors.paper.withValues(alpha: 0.06),
+                width: 1,
+              ),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Sliding selection pill — animated so taps feel springy
+                // without pulling in Motor on this path.
+                Positioned.fill(
+                  left: 4,
+                  right: 4,
+                  top: 4,
+                  bottom: 4,
+                  child: AnimatedAlign(
+                    alignment: align,
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOutCubic,
+                    child: FractionallySizedBox(
+                      widthFactor: 1 / tabCount,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: AppColors.paper.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(28.r),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    for (int i = 0; i < tabCount; i++)
+                      _androidTab(
+                        _navTabs[i],
+                        selected: i == selectedIndex,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          onTap(i);
+                        },
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _androidTab(
+    _NavTab tab, {
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final color = selected ? AppColors.fuchsia : AppColors.muted;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

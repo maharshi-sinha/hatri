@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../backend/api/api_exception.dart';
 import '../../backend/services/auth_service.dart';
+import '../../core/analytics/analytics_service.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
@@ -42,6 +45,8 @@ class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
     // Backend expects E.164 with no spaces.
     final phone = '+91${_phoneController.text}';
     try {
+      unawaited(sl<AnalyticsService>().signInStarted());
+      unawaited(sl<AnalyticsService>().otpRequested());
       await sl<AuthService>().requestOtp(phone);
       if (!mounted) return;
       context.push('/otp', extra: phone);

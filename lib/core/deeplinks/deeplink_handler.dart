@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../backend/services/events_service.dart';
 import '../../features/events/event_details_screen.dart';
+import '../analytics/analytics_service.dart';
 import '../di/injection_container.dart';
 
 /// Captures incoming URIs delivered to the app and routes them to the right
@@ -60,6 +61,7 @@ class DeeplinkHandler {
 
   Future<void> _handle(Uri uri) async {
     debugPrint('DeeplinkHandler: received $uri');
+    unawaited(sl<AnalyticsService>().deeplinkReceived(uri: uri.toString()));
     final slug = _extractEventSlug(uri);
     if (slug == null) return;
 

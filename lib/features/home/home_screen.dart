@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../backend/services/auth_service.dart';
+import '../../core/analytics/analytics_service.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/models/makers.dart';
 import '../../core/models/models.dart';
@@ -63,7 +66,15 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_loginNudgeShownThisSession) return;
       if (sl<AuthService>().isSignedIn) return;
       _loginNudgeShownThisSession = true;
-      await showLoginPromptSheet(context, reason: LoginReason.generic);
+      unawaited(sl<AnalyticsService>().loginNudgeShown(reason: 'home_timer'));
+      final wentToSignIn = await showLoginPromptSheet(
+        context,
+        reason: LoginReason.generic,
+      );
+      unawaited(sl<AnalyticsService>().loginNudgeDismissed(
+        reason: 'home_timer',
+        wentToSignIn: wentToSignIn,
+      ));
     });
   }
 
@@ -284,33 +295,41 @@ class _TopBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Starburst(size: 22.r, color: AppColors.lime),
-              SizedBox(width: 8.r),
-              Text(
-                'HATRI',
-                style: TextStyle(
-                  fontFamily: 'ClashDisplay',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 34.sp,
-                  height: 1.0,
-                  letterSpacing: -1.4.sp,
-                  color: AppColors.paper,
+          // Diagnostic: in debug builds only, long-pressing the HATRI logo
+          // forces a native crash so we can confirm Crashlytics reporting
+          // after any change to Firebase setup. Stripped out of release.
+          GestureDetector(
+            onLongPress: kDebugMode
+                ? () => FirebaseCrashlytics.instance.crash()
+                : null,
+            child: Row(
+              children: [
+                Starburst(size: 22.r, color: AppColors.lime),
+                SizedBox(width: 8.r),
+                Text(
+                  'HATRI',
+                  style: TextStyle(
+                    fontFamily: 'ClashDisplay',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 34.sp,
+                    height: 1.0,
+                    letterSpacing: -1.4.sp,
+                    color: AppColors.paper,
+                  ),
                 ),
-              ),
-              SizedBox(width: 6.r),
-              Text(
-                'RAIPUR',
-                style: TextStyle(
-                  fontFamily: 'GeneralSans',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 10.sp,
-                  letterSpacing: 1.6.sp,
-                  color: AppColors.fuchsia,
+                SizedBox(width: 6.r),
+                Text(
+                  'RAIPUR',
+                  style: TextStyle(
+                    fontFamily: 'GeneralSans',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10.sp,
+                    letterSpacing: 1.6.sp,
+                    color: AppColors.fuchsia,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const Spacer(),
           _iconButton(context, 'assets/icons/Search.svg', onTap: () {

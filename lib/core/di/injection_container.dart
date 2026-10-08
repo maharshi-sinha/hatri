@@ -12,6 +12,7 @@ import '../../backend/services/tickets_service.dart';
 import '../../backend/services/user_service.dart';
 import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/events/bloc/events_bloc.dart';
+import '../analytics/analytics_service.dart';
 import '../repositories/backend_event_repository.dart';
 import '../repositories/community_repository.dart';
 import '../repositories/creator_repository.dart';
@@ -46,6 +47,7 @@ void init() {
   sl.registerLazySingleton<TicketsService>(
     () => TicketsService(api: sl<TicketsApi>()),
   );
+  sl.registerLazySingleton<AnalyticsService>(() => AnalyticsService());
 
   // ─── Blocs ───
   sl.registerFactory(() => EventsBloc(repository: sl()));

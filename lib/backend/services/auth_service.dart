@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 
+import '../../core/analytics/analytics_service.dart';
+import '../../core/di/injection_container.dart';
 import '../api/api_exception.dart';
 import '../api/auth_api.dart';
 import '../api/http_client.dart';
@@ -111,6 +113,10 @@ class AuthService {
     _user = result.user;
     await _persist();
     state.value = AuthState(AuthStatus.signedIn, _user);
+    // Identify the user to analytics + Crashlytics now that we know who they
+    // are. Non-blocking: analytics must never fail the auth flow.
+    unawaited(sl<AnalyticsService>().identify(userId: _user!.id, phone: phone));
+    unawaited(sl<AnalyticsService>().signInCompleted());
   }
 
   /// Called by the sign-out button.
@@ -120,6 +126,8 @@ class AuthService {
       // Fire and don't wait — local sign-out should always succeed.
       unawaited(_api.logout(rt));
     }
+    unawaited(sl<AnalyticsService>().signedOut());
+    unawaited(sl<AnalyticsService>().reset());
     await _clear();
   }
 
