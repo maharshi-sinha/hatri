@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../backend/services/auth_service.dart';
+import '../../core/di/injection_container.dart';
 import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
@@ -16,6 +18,7 @@ import '../saved/saved_events_screen.dart';
 import '../tickets/my_tickets_screen.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
+import 'signed_out_profile.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -45,6 +48,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Auth gate — anyone opening the app (incl. via deeplink) without
+    // signing in now sees the mascot + "sign in" copy instead of the mock
+    // Aarohi profile that used to leak when currentUser was empty.
+    return ValueListenableBuilder<AuthState>(
+      valueListenable: sl<AuthService>().state,
+      builder: (context, authState, _) {
+        if (authState.status != AuthStatus.signedIn) {
+          return const SignedOutProfile();
+        }
+        return _buildSignedInProfile();
+      },
+    );
+  }
+
+  Widget _buildSignedInProfile() {
     final user = currentUser;
     final userName = user.name.isNotEmpty ? user.name.toUpperCase() : 'AAROHI SHARMA';
     final userBio = user.bio.isNotEmpty ? user.bio : 'Photographer. Chai fiend.';

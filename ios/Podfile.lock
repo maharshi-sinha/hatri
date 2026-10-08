@@ -1,7 +1,7 @@
 PODS:
   - add_2_calendar (0.0.1):
     - Flutter
-  - app_links (6.4.1):
+  - app_links (7.0.0):
     - Flutter
   - appsflyer_sdk (6.18.1):
     - appsflyer_sdk/Core (= 6.18.1)
@@ -320,7 +320,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   add_2_calendar: a7585019c9875312e69412bfd168df46018994f7
-  app_links: 3dbc685f76b1693c66a6d9dd1e9ab6f73d97dc0a
+  app_links: a754cbec3c255bd4bbb4d236ecc06f28cd9a7ce8
   appsflyer_sdk: f0bd7be69dca64aef6d569aa6bd3ef8cd8228236
   AppsFlyerFramework: 319c8357ea52a559c27a7b474f0b50833e76e3eb
   audioplayers_darwin: ccf9c770ee768abb07e26d90af093f7bab1c12ab

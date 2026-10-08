@@ -29,6 +29,23 @@ final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>()
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/splash',
+  // Deeplinks like `hatri://event/<slug>` and `https://hatri.online/e/<slug>`
+  // are handled by DeeplinkHandler, which pushes screens on the root
+  // navigator imperatively. go_router would otherwise see them as unknown
+  // paths and show its "Page Not Found" screen for a frame before our
+  // handler takes over. Silently redirect those to home so there's no flash.
+  redirect: (context, state) {
+    final uri = state.uri;
+    // Only intervene for URIs we KNOW the DeeplinkHandler owns.
+    final ownedByDeeplink =
+        uri.scheme == 'hatri' ||
+        (uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'e');
+    return ownedByDeeplink ? '/' : null;
+  },
+  errorBuilder: (context, state) {
+    // Any residual unknown route — stay silent instead of showing a 404 flash.
+    return const SizedBox.shrink();
+  },
   routes: [
     // Onboarding flow:
     // splash → welcome → phone → otp → name → interests → user-details (bio)

@@ -15,6 +15,8 @@ import '../../core/di/injection_container.dart';
 import '../../core/models/models.dart';
 import '../../core/repositories/creator_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/auth_prompt/login_prompt_sheet.dart';
+import '../../shared/auth_prompt/require_auth.dart';
 import '../../shared/design/hatri_snack.dart';
 import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
@@ -113,31 +115,45 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     setState(() => _organizer = o);
   }
 
-  void _openStartPlan() {
-    HapticFeedback.selectionClick();
-    Navigator.push(
+  Future<void> _openStartPlan() async {
+    await requireAuth(
       context,
-      MaterialPageRoute(builder: (_) => StartPlanScreen(event: event)),
+      reason: LoginReason.generic,
+      customLine: 'plans go better with your crew. sign in to start one. 🧃',
+      onAuthed: () async {
+        HapticFeedback.selectionClick();
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => StartPlanScreen(event: event)),
+        );
+      },
     );
   }
 
   Future<void> _toggleSaved() async {
-    HapticFeedback.selectionClick();
-    // Optimistic local flip — snappy UI.
-    final wasSaved = _isSaved;
-    SavedEventsStore.instance.toggle(event.id);
-    setState(() {});
-    // Best-effort backend sync. On failure, revert local so the two agree.
-    try {
-      if (wasSaved) {
-        await sl<EventsService>().unsave(event.id);
-      } else {
-        await sl<EventsService>().save(event.id);
-      }
-    } catch (_) {
-      SavedEventsStore.instance.toggle(event.id);
-      if (mounted) setState(() {});
-    }
+    await requireAuth(
+      context,
+      reason: LoginReason.save,
+      onAuthed: () async {
+        HapticFeedback.selectionClick();
+        // Optimistic local flip — snappy UI.
+        final wasSaved = _isSaved;
+        SavedEventsStore.instance.toggle(event.id);
+        setState(() {});
+        // Best-effort backend sync. On failure, revert local so the two agree.
+        try {
+          if (wasSaved) {
+            await sl<EventsService>().unsave(event.id);
+          } else {
+            await sl<EventsService>().save(event.id);
+          }
+        } catch (_) {
+          SavedEventsStore.instance.toggle(event.id);
+          if (mounted) setState(() {});
+        }
+      },
+    );
   }
 
   /// Single dispatcher for the CTA button. Behavior:
@@ -163,6 +179,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       );
       return;
     }
+
+    // Gate the claim flow behind sign-in. Returning users with a ticket
+    // skip this entirely via the _isRsvpd branch above (they're signed in
+    // by definition — the ticket fetch is JWT-authenticated).
+    final signedIn = await requireAuth(
+      context,
+      reason: LoginReason.rsvp,
+      onAuthed: () async {},
+    );
+    if (!signedIn || !mounted) return;
 
     final confirmed = await _showConfirmSheet();
     if (confirmed != true || !mounted) return;

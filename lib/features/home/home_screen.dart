@@ -1,12 +1,16 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../backend/services/auth_service.dart';
+import '../../core/di/injection_container.dart';
 import '../../core/models/makers.dart';
 import '../../core/models/models.dart';
 import '../../core/notifications/notifications_store.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/auth_prompt/login_prompt_sheet.dart';
 import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
 import '../../shared/widgets/event_card.dart';
@@ -24,8 +28,44 @@ import '../events/bloc/events_state.dart';
 import '../makers/maker_profile_screen.dart';
 import '../../core/responsive/responsive.dart';
 
-class HomeScreen extends StatelessWidget {
+// Session-scoped flag: the soft login nudge fires at most once per app launch.
+// Resets on hot restart / cold start, which is the intent — one gentle poke,
+// not a nag loop.
+bool _loginNudgeShownThisSession = false;
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Timer? _nudgeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleLoginNudge();
+  }
+
+  @override
+  void dispose() {
+    _nudgeTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleLoginNudge() {
+    if (_loginNudgeShownThisSession) return;
+    if (sl<AuthService>().isSignedIn) return;
+    _nudgeTimer = Timer(const Duration(seconds: 45), () async {
+      if (!mounted) return;
+      if (_loginNudgeShownThisSession) return;
+      if (sl<AuthService>().isSignedIn) return;
+      _loginNudgeShownThisSession = true;
+      await showLoginPromptSheet(context, reason: LoginReason.generic);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

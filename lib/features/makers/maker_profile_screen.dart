@@ -7,6 +7,8 @@ import '../../core/makers/reviews_store.dart';
 import '../../core/models/makers.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/auth_prompt/login_prompt_sheet.dart';
+import '../../shared/auth_prompt/require_auth.dart';
 import 'rate_maker_sheet.dart';
 
 /// Public maker profile. Full-bleed portrait cover, meta strip, bio, tag row,
@@ -53,10 +55,29 @@ class _MakerProfileScreenState extends State<MakerProfileScreen> {
   int get _liveReviewCount => maker.reviewCount + ReviewsStore.instance.forMaker(maker.id).length;
 
   Future<void> _openInquiry(BuildContext context) async {
-    HapticFeedback.mediumImpact();
-    final url = _buildBookingUrl(maker);
-    if (url == null) return;
-    await launchUrl(url, mode: LaunchMode.externalApplication);
+    await requireAuth(
+      context,
+      reason: LoginReason.custom,
+      customLine: 'inquire first, book first. sign in and send a note. 💌',
+      onAuthed: () async {
+        HapticFeedback.mediumImpact();
+        final url = _buildBookingUrl(maker);
+        if (url == null) return;
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      },
+    );
+  }
+
+  Future<void> _openRateSheet(BuildContext context) async {
+    await requireAuth(
+      context,
+      reason: LoginReason.custom,
+      customLine: 'drop a review. sign in so it counts. ⭐',
+      onAuthed: () async {
+        if (!context.mounted) return;
+        RateMakerSheet.show(context, maker);
+      },
+    );
   }
 
   Future<void> _openMaps(BuildContext context) async {
@@ -120,7 +141,7 @@ class _MakerProfileScreenState extends State<MakerProfileScreen> {
                       if (_liveReviewCount > 0)
                         _RatingSummary(rating: _liveRating, reviewCount: _liveReviewCount),
                       SizedBox(height: 12.r),
-                      _RateCta(onTap: () => RateMakerSheet.show(context, maker)),
+                      _RateCta(onTap: () => _openRateSheet(context)),
                       SizedBox(height: 14.r),
                       for (final r in _allReviews) ...[
                         _ReviewCard(review: r),
