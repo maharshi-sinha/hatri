@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/analytics/analytics_service.dart';
 import 'core/deeplinks/deeplink_handler.dart';
+import 'core/notifications/notifications_service.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/responsive/responsive.dart';
 import 'core/routing/app_router.dart';
@@ -57,6 +58,12 @@ void main() async {
     await di.bootAuth();
     // Fire-and-forget: analytics init shouldn't delay first paint.
     unawaited(di.sl<AnalyticsService>().init());
+    // Register FCM channel + listeners. If a user is already signed in from a
+    // previous session, also push a fresh token up to backend.
+    unawaited(() async {
+      await di.sl<NotificationsService>().init();
+      await di.sl<NotificationsService>().syncToken();
+    }());
 
     runApp(const HatriApp());
 

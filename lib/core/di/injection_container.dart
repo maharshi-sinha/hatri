@@ -14,6 +14,7 @@ import '../../backend/services/user_service.dart';
 import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/events/bloc/events_bloc.dart';
 import '../analytics/analytics_service.dart';
+import '../notifications/notifications_service.dart';
 import '../repositories/backend_event_repository.dart';
 import '../repositories/community_repository.dart';
 import '../repositories/creator_repository.dart';
@@ -49,6 +50,7 @@ void init() {
     () => TicketsService(api: sl<TicketsApi>()),
   );
   sl.registerLazySingleton<AnalyticsService>(() => AnalyticsService());
+  sl.registerLazySingleton<NotificationsService>(() => NotificationsService());
   // MSG91 widget credentials are client-side identifiers (ship with the app,
   // like Firebase API keys). The server-side AUTH_KEY stays in Render env.
   sl.registerLazySingleton<Msg91WidgetService>(

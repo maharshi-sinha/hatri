@@ -7,6 +7,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 
 import '../../core/analytics/analytics_service.dart';
 import '../../core/di/injection_container.dart';
+import '../../core/notifications/notifications_service.dart';
 import '../api/api_exception.dart';
 import '../api/auth_api.dart';
 import '../api/http_client.dart';
@@ -117,6 +118,8 @@ class AuthService {
     // are. Non-blocking: analytics must never fail the auth flow.
     unawaited(sl<AnalyticsService>().identify(userId: _user!.id, phone: phone));
     unawaited(sl<AnalyticsService>().signInCompleted());
+    // Push: register this install's FCM token for the newly signed-in user.
+    unawaited(sl<NotificationsService>().syncToken());
   }
 
   /// MSG91 widget path: the client already verified the OTP via the widget
@@ -131,6 +134,7 @@ class AuthService {
     state.value = AuthState(AuthStatus.signedIn, _user);
     unawaited(sl<AnalyticsService>().identify(userId: _user!.id, phone: phone));
     unawaited(sl<AnalyticsService>().signInCompleted());
+    unawaited(sl<NotificationsService>().syncToken());
   }
 
   /// Called by the sign-out button.
@@ -140,6 +144,12 @@ class AuthService {
       // Fire and don't wait — local sign-out should always succeed.
       unawaited(_api.logout(rt));
     }
+    // Unregister FCM token BEFORE clearing JWT — the DELETE /devices call
+    // needs the bearer. Awaited best-effort so backend doesn't keep pushing
+    // to this device for the previous user.
+    try {
+      await sl<NotificationsService>().deleteToken();
+    } catch (_) {}
     unawaited(sl<AnalyticsService>().signedOut());
     unawaited(sl<AnalyticsService>().reset());
     await _clear();
