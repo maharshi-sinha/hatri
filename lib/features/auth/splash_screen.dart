@@ -42,8 +42,9 @@ class _SplashScreenState extends State<SplashScreen> {
       _goNext();
     });
 
-    // Safety net: navigate no later than 8s regardless of video state.
-    _safety = Timer(const Duration(seconds: 8), _goNext);
+    // Safety net: navigate no later than 4s regardless of video state so a
+    // frozen or slow-decoding video never traps the user on the splash.
+    _safety = Timer(const Duration(seconds: 4), _goNext);
   }
 
   void _onTick() {
@@ -59,8 +60,21 @@ class _SplashScreenState extends State<SplashScreen> {
     if (_navigated || !mounted) return;
     _navigated = true;
     _safety?.cancel();
-    final signedIn = sl<AuthService>().isSignedIn;
-    context.go(signedIn ? '/' : '/welcome');
+    // If DI happens to be in a weird state (release flakiness has bit us
+    // before), fall through as signed-out rather than throwing inside
+    // the splash — a throw here would leave the user stuck on the video
+    // forever since context.go would never run.
+    bool signedIn = false;
+    try {
+      signedIn = sl<AuthService>().isSignedIn;
+    } catch (e) {
+      debugPrint('splash: AuthService.isSignedIn threw: $e');
+    }
+    try {
+      context.go(signedIn ? '/' : '/welcome');
+    } catch (e) {
+      debugPrint('splash: context.go threw: $e');
+    }
   }
 
   @override
