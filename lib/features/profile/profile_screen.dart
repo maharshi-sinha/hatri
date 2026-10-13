@@ -95,8 +95,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       userEnergy: user.energy,
                       onEdit: _openEditProfile,
                     ),
-                    SizedBox(height: 24.r),
-                    const _StatsRow(),
                     SizedBox(height: 28.r),
                     _InterestsRow(interests: userInterests, onEdit: _openInterestsEditor),
                     SizedBox(height: 32.r),
@@ -470,70 +468,6 @@ class _Hero extends StatelessWidget {
     if ((m == 12 && day >= 22) || (m == 1 && day <= 19)) return (name: 'Capricorn', symbol: '♑');
     if ((m == 1 && day >= 20) || (m == 2 && day <= 18)) return (name: 'Aquarius', symbol: '♒');
     return (name: 'Pisces', symbol: '♓');
-  }
-}
-
-// ─── Stats row ─────────────────────────────────────────────────────────────
-
-class _StatsRow extends StatelessWidget {
-  const _StatsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: const [
-        Expanded(child: _StatTile(value: '12', label: 'EVENTS', color: AppColors.lime)),
-        SizedBox(width: 10),
-        Expanded(child: _StatTile(value: '4', label: 'COMMUNITIES', color: AppColors.fuchsia)),
-        SizedBox(width: 10),
-        Expanded(child: _StatTile(value: '3', label: 'PLANS', color: AppColors.indigo)),
-      ],
-    );
-  }
-}
-
-class _StatTile extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
-  const _StatTile({required this.value, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 16.r, horizontal: 10.r),
-      decoration: BoxDecoration(
-        color: AppColors.graphite,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(Corners.md),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'ClashDisplay',
-              fontWeight: FontWeight.w800,
-              fontSize: 30.sp,
-              height: 1.0,
-              letterSpacing: -0.6.sp,
-              color: color,
-            ),
-          ),
-          SizedBox(height: 4.r),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'GeneralSans',
-              fontWeight: FontWeight.w700,
-              fontSize: 10.sp,
-              letterSpacing: 1.4.sp,
-              color: AppColors.muted,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
