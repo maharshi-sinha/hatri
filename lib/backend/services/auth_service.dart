@@ -80,11 +80,6 @@ class AuthService {
     final userJson = await _storage.read(key: _userKey);
 
     if (access == null || refresh == null) {
-      debugPrint(
-        '[auth] boot: NO TOKENS in secure storage. '
-        'Routing to welcome. access=${access == null ? "null" : "present"} '
-        'refresh=${refresh == null ? "null" : "present"}',
-      );
       state.value = const AuthState(AuthStatus.signedOut, null);
       return;
     }
@@ -95,19 +90,13 @@ class AuthService {
         : ApiUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
 
     if (_isExpired(access)) {
-      debugPrint('[auth] boot: access token expired, attempting refresh...');
       try {
         await _refresh();
-        debugPrint('[auth] boot: refresh OK');
-      } catch (e) {
-        debugPrint('[auth] boot: refresh FAILED → clearing tokens: $e');
+      } catch (_) {
         await _clear();
         return;
       }
-    } else {
-      debugPrint('[auth] boot: access token still valid, no refresh needed');
     }
-    debugPrint('[auth] boot: signed in as ${_user?.phone ?? "<unknown>"}');
     state.value = AuthState(AuthStatus.signedIn, _user);
   }
 
