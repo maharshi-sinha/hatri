@@ -32,7 +32,9 @@ class HatriInvoice {
 
   Future<Uint8List> build() async {
     final doc = pw.Document(title: 'Hatri Invoice · $ticketRef');
-    final qrPayload = 'hatri://ticket/${event.id}?ref=$ticketRef';
+    // Non-Hatri scanners land on the event's hatri.online page which has
+    // a "download the app" CTA. App users auto-open via Universal Link.
+    final qrPayload = 'https://hatri.online/e/${event.slug}';
     final logo = await _loadLogo();
 
     doc.addPage(

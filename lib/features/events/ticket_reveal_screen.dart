@@ -394,8 +394,12 @@ class _TicketRevealScreenState extends State<TicketRevealScreen> with TickerProv
                           alignment: Alignment.center,
                           children: [
                             QrImageView(
-                              data: widget.ticket?.qrCode ??
-                                  'hatri://ticket/${widget.event.id}',
+                              // Non-Hatri scanners land on the event's
+                              // hatri.online page (download-the-app CTA
+                              // included). Hatri users auto-open via
+                              // Universal Links.
+                              data: widget.ticket?.qrShareUrl ??
+                                  'https://hatri.online/e/${widget.event.id}',
                               version: QrVersions.auto,
                               size: 120.r,
                               padding: EdgeInsets.zero,
