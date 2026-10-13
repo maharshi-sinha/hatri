@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/models/models.dart';
@@ -53,14 +54,11 @@ class CommunityCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      community.coverUrl,
+                    HatriImage(
+                      url: community.coverUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(color: accent),
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return Container(color: AppColors.surfaceRaised);
-                      },
+                      errorWidget: Container(color: accent),
+                      placeholder: Container(color: AppColors.surfaceRaised),
                     ),
                     // Type chip, top-left
                     Positioned(

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -714,12 +715,12 @@ class _HostEventScreenState extends State<HostEventScreen> {
                 clipBehavior: Clip.antiAlias,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(Corners.md),
-                  child: Image.network(
-                    url,
+                  child: HatriImage(
+                    url: url,
                     fit: BoxFit.cover,
                     // Graceful fallback: colored block + subtle icon,
                     // properly clipped by the parent's rounded corners.
-                    errorBuilder: (_, __, ___) => Container(
+                    errorWidget: Container(
                       color: AppColors.surfaceRaised,
                       alignment: Alignment.center,
                       child: Icon(
@@ -728,10 +729,7 @@ class _HostEventScreenState extends State<HostEventScreen> {
                         size: 22.r,
                       ),
                     ),
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return Container(color: AppColors.surfaceRaised);
-                    },
+                    placeholder: Container(color: AppColors.surfaceRaised),
                   ),
                 ),
               ),

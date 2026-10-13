@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
@@ -587,10 +588,7 @@ class _PortraitStrip extends StatelessWidget {
                   border: Border.all(color: AppColors.onNeon, width: 2),
                 ),
                 child: ClipOval(
-                  child: Image.network(
-                    portraits[i],
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(color: AppColors.surface),
+                  child: HatriImage(url: portraits[i], fit: BoxFit.cover, errorWidget: Container(color: AppColors.surface),
                   ),
                 ),
               ),
@@ -973,10 +971,7 @@ class _FeatureSpread extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.network(
-                  maker.portrait,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(color: accent),
+                HatriImage(url: maker.portrait, fit: BoxFit.cover, errorWidget: Container(color: accent),
                 ),
                 Positioned(
                   top: 90.r,
@@ -1327,10 +1322,7 @@ class _RollCallRow extends StatelessWidget {
                   border: Border.all(color: AppColors.border, width: 1),
                 ),
                 child: ClipOval(
-                  child: Image.network(
-                    maker.portrait,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(color: AppColors.surface),
+                  child: HatriImage(url: maker.portrait, fit: BoxFit.cover, errorWidget: Container(color: AppColors.surface),
                   ),
                 ),
               ),

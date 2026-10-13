@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'hatri_image.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/models/makers.dart';
@@ -52,10 +53,7 @@ class MakerCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      maker.portrait,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(color: stripBg),
+                    HatriImage(url: maker.portrait, fit: BoxFit.cover, errorWidget: Container(color: stripBg),
                     ),
                     // Primary tag chip, top-left
                     Positioned(

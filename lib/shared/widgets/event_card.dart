@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -62,10 +63,10 @@ class EventCard extends StatelessWidget {
                   cover: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.network(
-                          event.coverUrl,
+                        HatriImage(
+                          url: event.coverUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(color: blockColor),
+                          errorWidget: Container(color: blockColor),
                         ),
                         // Halftone overlay tint
                         Positioned.fill(

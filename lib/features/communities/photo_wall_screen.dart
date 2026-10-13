@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -305,10 +306,7 @@ class _BentoCell extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(
-                photo.photoUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Container(color: AppColors.surfaceRaised),
+              HatriImage(url: photo.photoUrl, fit: BoxFit.cover, errorWidget: Container(color: AppColors.surfaceRaised),
               ),
               if (photo.youAreIn)
                 Positioned(

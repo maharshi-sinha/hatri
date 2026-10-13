@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'hatri_image.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/models/makers.dart';
@@ -182,10 +183,7 @@ class _PortraitStack extends StatelessWidget {
                   border: Border.all(color: accent, width: 2),
                 ),
                 child: ClipOval(
-                  child: Image.network(
-                    portraits[i],
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(color: AppColors.surface),
+                  child: HatriImage(url: portraits[i], fit: BoxFit.cover, errorWidget: Container(color: AppColors.surface),
                   ),
                 ),
               ),

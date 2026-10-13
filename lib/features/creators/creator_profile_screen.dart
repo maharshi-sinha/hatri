@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
@@ -51,8 +52,8 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
   }
 
   Future<void> _loadEvents() async {
-    final all = await sl<EventRepository>().getEvents();
-    final mine = all.where(
+    final page = await sl<EventRepository>().getEvents();
+    final mine = page.events.where(
       (e) => e.organizerId == creator.id || e.lineup.contains(creator.id),
     );
     final now = DateTime.now();
@@ -281,12 +282,12 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(Corners.sm),
-                      child: Image.network(
-                        creator.avatarUrl,
+                      child: HatriImage(
+                        url: creator.avatarUrl,
                         width: 88.r,
                         height: 88.r,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorWidget: Container(
                           width: 88.r,
                           height: 88.r,
                           color: AppColors.surfaceRaised,

@@ -1,9 +1,8 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:path_provider/path_provider.dart';
 
+import '../../core/images/image_compressor.dart';
 import '../api/api_exception.dart';
 import '../api/http_client.dart';
 import '../models/auth_models.dart';
@@ -64,18 +63,15 @@ class AvatarUploadService {
     return null;
   }
 
+  /// Resize + compress every avatar to <=300 KB JPEG at 512 px. Covers the
+  /// HEIC/HEIF -> JPEG conversion needed by iPhone cameras for free since
+  /// the compressor always outputs JPEG.
   Future<File> _normalizeForUpload(File file) async {
-    final lower = file.path.toLowerCase();
-    if (!lower.endsWith('.heic') && !lower.endsWith('.heif')) return file;
-    final tmp = await getTemporaryDirectory();
-    final target =
-        '${tmp.path}/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final out = await FlutterImageCompress.compressAndGetFile(
-      file.absolute.path,
-      target,
-      quality: 88,
-      format: CompressFormat.jpeg,
+    return const ImageCompressor().compressForUpload(
+      file,
+      maxDimension: 512,
+      maxBytes: 300 * 1024,
+      label: 'avatar',
     );
-    return out == null ? file : File(out.path);
   }
 }

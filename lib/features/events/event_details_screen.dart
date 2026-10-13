@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -439,14 +440,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           fit: StackFit.expand,
           children: [
             // Cover
-            Image.network(
-              event.coverUrl,
+            HatriImage(
+              url: event.coverUrl,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: eventColor),
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return Container(color: AppColors.surfaceRaised);
-              },
+              errorWidget: Container(color: eventColor),
+              placeholder: Container(color: AppColors.surfaceRaised),
             ),
             // Halftone tint
             Positioned.fill(
@@ -1995,10 +1993,7 @@ class _FlexPreview extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              event.coverUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: accent),
+            HatriImage(url: event.coverUrl, fit: BoxFit.cover, errorWidget: Container(color: accent),
             ),
             Positioned.fill(
               child: Opacity(

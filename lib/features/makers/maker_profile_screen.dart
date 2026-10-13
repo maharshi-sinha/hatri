@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -201,10 +202,7 @@ class _CoverSliver extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              maker.portrait,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(color: maker.statusColor),
+            HatriImage(url: maker.portrait, fit: BoxFit.cover, errorWidget: Container(color: maker.statusColor),
             ),
             // Bottom fade so name reads
             Positioned.fill(
@@ -775,10 +773,7 @@ class _PortfolioGrid extends StatelessWidget {
       ),
       itemBuilder: (_, i) => ClipRRect(
         borderRadius: BorderRadius.circular(Corners.md),
-        child: Image.network(
-          images[i],
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Container(color: AppColors.surfaceRaised),
+        child: HatriImage(url: images[i], fit: BoxFit.cover, errorWidget: Container(color: AppColors.surfaceRaised),
         ),
       ),
     );

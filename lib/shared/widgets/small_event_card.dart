@@ -5,6 +5,7 @@ import '../../core/models/models.dart';
 import '../../core/theme/app_theme.dart';
 import '../design/components.dart';
 import '../../core/responsive/responsive.dart';
+import 'hatri_image.dart';
 
 /// Editorial event card. Two visual blocks:
 ///   1) Poster card — image dominant, colored price strip at the bottom.
@@ -56,10 +57,10 @@ class SmallEventCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      event.coverUrl,
+                    HatriImage(
+                      url: event.coverUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(color: accent),
+                      errorWidget: Container(color: accent),
                     ),
                     // Category chip, top-left
                     Positioned(

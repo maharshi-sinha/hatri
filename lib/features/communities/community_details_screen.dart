@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -41,11 +42,11 @@ class _CommunityDetailsScreenState extends State<CommunityDetailsScreen> {
   }
 
   Future<void> _loadRelated() async {
-    final events = await sl<EventRepository>().getEvents();
+    final page = await sl<EventRepository>().getEvents();
     final nextId = widget.community.hostedWeekly?.nextInstanceEventId;
     final next = nextId == null
         ? null
-        : events.where((e) => e.id == nextId).firstOrNull;
+        : page.events.where((e) => e.id == nextId).firstOrNull;
 
     CreatorProfile? host;
     if (widget.community.hostId != null) {
@@ -185,10 +186,7 @@ class _CommunityDetailsScreenState extends State<CommunityDetailsScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              c.coverUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: accent.withValues(alpha: 0.3)),
+            HatriImage(url: c.coverUrl, fit: BoxFit.cover, errorWidget: Container(color: accent.withValues(alpha: 0.3)),
             ),
             const _HalftoneOverlay(),
             Container(
@@ -1406,10 +1404,7 @@ class _MemoryWallPreview extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        p.photoUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(color: AppColors.surfaceRaised),
+                      HatriImage(url: p.photoUrl, fit: BoxFit.cover, errorWidget: Container(color: AppColors.surfaceRaised),
                       ),
                       if (i == preview.length - 1 && all.length > preview.length)
                         Container(
@@ -1495,10 +1490,7 @@ class _MemoryWall extends StatelessWidget {
                   child: SizedBox(
                     width: 110.r,
                     height: 110.r,
-                    child: Image.network(
-                      p.photoUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(color: AppColors.surfaceRaised),
+                    child: HatriImage(url: p.photoUrl, fit: BoxFit.cover, errorWidget: Container(color: AppColors.surfaceRaised),
                     ),
                   ),
                 );

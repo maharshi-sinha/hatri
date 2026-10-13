@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -387,10 +388,7 @@ class _ThisWeekScreenState extends State<ThisWeekScreen> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        event.coverUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(color: accent),
+                      HatriImage(url: event.coverUrl, fit: BoxFit.cover, errorWidget: Container(color: accent),
                       ),
                       Positioned.fill(
                         child: Opacity(

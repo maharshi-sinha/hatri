@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -83,10 +84,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
                   child: InteractiveViewer(
                     minScale: 1.0,
                     maxScale: 4.0,
-                    child: Image.network(
-                      widget.photos[i].photoUrl,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => Container(color: AppColors.surfaceRaised),
+                    child: HatriImage(url: widget.photos[i].photoUrl, fit: BoxFit.contain, errorWidget: Container(color: AppColors.surfaceRaised),
                     ),
                   ),
                 );

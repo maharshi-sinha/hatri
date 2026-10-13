@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -287,12 +288,12 @@ class _StartPlanScreenState extends State<StartPlanScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(Corners.sm),
-            child: Image.network(
-              event.coverUrl,
+            child: HatriImage(
+              url: event.coverUrl,
               width: 72.r,
               height: 72.r,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(width: 72.r, height: 72.r, color: accent),
+              errorWidget: Container(width: 72.r, height: 72.r, color: accent),
             ),
           ),
           SizedBox(width: 12.r),
