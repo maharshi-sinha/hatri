@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../api/api_exception.dart';
 import '../api/http_client.dart';
@@ -22,13 +24,18 @@ class AvatarUploadService {
 
   /// Uploads [file] as multipart form-data (field name: "file") and
   /// returns the updated ApiUser (with the new avatarUrl).
+  ///
+  /// iPhone cameras save HEIC by default. HEIC isn't web-safe (Android, Chrome,
+  /// Firefox can't render it), so we transcode to JPEG before upload. Non-HEIC
+  /// files pass through untouched.
   Future<ApiUser> uploadAvatar(File file) async {
-    final mime = _mimeFor(file.path);
+    final upload = await _normalizeForUpload(file);
+    final mime = _mimeFor(upload.path);
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(
-        file.path,
+        upload.path,
         contentType: mime == null ? null : DioMediaType.parse(mime),
-        filename: file.uri.pathSegments.last,
+        filename: upload.uri.pathSegments.last,
       ),
     });
 
@@ -55,5 +62,20 @@ class AvatarUploadService {
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.webp')) return 'image/webp';
     return null;
+  }
+
+  Future<File> _normalizeForUpload(File file) async {
+    final lower = file.path.toLowerCase();
+    if (!lower.endsWith('.heic') && !lower.endsWith('.heif')) return file;
+    final tmp = await getTemporaryDirectory();
+    final target =
+        '${tmp.path}/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final out = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      target,
+      quality: 88,
+      format: CompressFormat.jpeg,
+    );
+    return out == null ? file : File(out.path);
   }
 }

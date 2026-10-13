@@ -57,13 +57,13 @@ class _WelcomeCarouselScreenState extends State<WelcomeCarouselScreen> {
         curve: Curves.easeOutCubic,
       );
     } else {
-      context.go('/phone');
+      context.go('/notification-permission');
     }
   }
 
   void _skip() {
     HapticFeedback.selectionClick();
-    context.go('/phone');
+    context.go('/notification-permission');
   }
 
   @override

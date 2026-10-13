@@ -75,7 +75,12 @@ class _NotificationPermissionScreenState
     setState(() => _confirmed = true);
     await Future<void>.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
-    context.push('/location-permission');
+    context.go('/location-permission');
+  }
+
+  void _skipForNow() {
+    HapticFeedback.selectionClick();
+    context.go('/location-permission');
   }
 
 
@@ -254,6 +259,24 @@ class _NotificationPermissionScreenState
                               fontSize: 15.sp,
                               letterSpacing: 1.0.sp,
                             ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10.r),
+                      TextButton(
+                        onPressed: (_busy || _confirmed) ? null : _skipForNow,
+                        style: TextButton.styleFrom(
+                          foregroundColor: onBg.withValues(alpha: 0.7),
+                          padding: EdgeInsets.symmetric(vertical: 10.r),
+                        ),
+                        child: Text(
+                          'maybe later',
+                          style: TextStyle(
+                            fontFamily: 'GeneralSans',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.sp,
+                            letterSpacing: 0.4.sp,
+                            decoration: TextDecoration.underline,
                           ),
                         ),
                       ),

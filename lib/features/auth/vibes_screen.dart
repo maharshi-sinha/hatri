@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
@@ -46,16 +45,9 @@ class _VibesScreenState extends State<VibesScreen> {
     currentUser.birthday = _birthday!.toIso8601String().split('T').first;
     currentUser.gender = _gender!;
     currentUser.energy = _energy!;
-    final notif = await Permission.notification.status;
-    final loc = await Permission.locationWhenInUse.status;
     if (!mounted) return;
-    if (notif.isGranted && loc.isGranted) {
-      context.go('/celebration');
-    } else if (notif.isGranted) {
-      context.go('/location-permission');
-    } else {
-      context.go('/notification-permission');
-    }
+    // Permissions are asked before OTP now, so vibes is the last profile step.
+    context.go('/celebration');
   }
 
   Future<void> _pickBirthday() async {

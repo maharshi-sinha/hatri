@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../models/event_models.dart';
 import 'http_client.dart';
@@ -113,12 +115,13 @@ class EventsApi {
   /// Requires auth. Uploads a cover image via multipart form-data; returns
   /// the public URL to pass as `coverUrl` to [create].
   Future<String> uploadCover(File file) async {
-    final mime = _mimeForPath(file.path);
+    final upload = await _normalizeForUpload(file);
+    final mime = _mimeForPath(upload.path);
     try {
       final form = FormData.fromMap({
         'file': await MultipartFile.fromFile(
-          file.path,
-          filename: file.uri.pathSegments.last,
+          upload.path,
+          filename: upload.uri.pathSegments.last,
           contentType: MediaType.parse(mime),
         ),
       });
@@ -145,5 +148,22 @@ class EventsApi {
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.webp')) return 'image/webp';
     return 'image/jpeg';
+  }
+
+  /// iPhone cameras save HEIC/HEIF by default and browsers can't render them.
+  /// Transcode to JPEG at the edge so what we store is universally viewable.
+  static Future<File> _normalizeForUpload(File file) async {
+    final lower = file.path.toLowerCase();
+    if (!lower.endsWith('.heic') && !lower.endsWith('.heif')) return file;
+    final tmp = await getTemporaryDirectory();
+    final target =
+        '${tmp.path}/cover_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final out = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      target,
+      quality: 86,
+      format: CompressFormat.jpeg,
+    );
+    return out == null ? file : File(out.path);
   }
 }

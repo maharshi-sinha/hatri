@@ -39,10 +39,15 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
     final status = await Permission.locationWhenInUse.status;
     if (!mounted) return;
     if (status.isGranted) {
-      context.pushReplacement('/celebration');
+      context.pushReplacement('/phone');
     } else {
       setState(() => _checking = false);
     }
+  }
+
+  void _skipForNow() {
+    HapticFeedback.selectionClick();
+    context.go('/phone');
   }
 
   @override
@@ -83,7 +88,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
     setState(() => _confirmed = true);
     await Future<void>.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
-    context.push('/celebration');
+    context.go('/phone');
   }
 
   @override
@@ -261,6 +266,24 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                               fontSize: 15.sp,
                               letterSpacing: 1.0.sp,
                             ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10.r),
+                      TextButton(
+                        onPressed: (_busy || _confirmed) ? null : _skipForNow,
+                        style: TextButton.styleFrom(
+                          foregroundColor: onBg.withValues(alpha: 0.7),
+                          padding: EdgeInsets.symmetric(vertical: 10.r),
+                        ),
+                        child: Text(
+                          'maybe later',
+                          style: TextStyle(
+                            fontFamily: 'GeneralSans',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.sp,
+                            letterSpacing: 0.4.sp,
+                            decoration: TextDecoration.underline,
                           ),
                         ),
                       ),

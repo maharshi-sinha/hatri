@@ -41,14 +41,9 @@ class NotificationsService {
     _initialized = true;
 
     try {
-      // iOS: ask permission here. On Android >=13 permission is prompted by
-      // the OS when the first notification is shown; we don't block init on
-      // it, our onboarding chain already covers the permission ask.
-      await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      // Permission is asked by NotificationPermissionScreen in onboarding via
+      // permission_handler. We deliberately do NOT prompt here so the OS
+      // dialog doesn't fire on cold start before the user sees context.
 
       // Android: register the channel with our custom sound. iOS reads sound
       // per-notification from the payload instead of channels, so this

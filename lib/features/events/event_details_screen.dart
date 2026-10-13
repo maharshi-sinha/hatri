@@ -249,6 +249,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   String _friendlyRsvpError(ApiException e) {
     if (e is NetworkException) return 'no network. try again.';
     if (e is UnauthorizedException) return 'sign in to claim tickets.';
+    if (e is NotFoundException) return "event isn't live yet.";
     if (e is ClientException) {
       if (e.statusCode == 409) return 'sold out.';
       return e.message;
