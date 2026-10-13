@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -191,8 +192,7 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
             ),
           ),
           GestureDetector(
-            onTap: () => Navigator.push(
-              context,
+            onTap: () => Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(builder: (_) => const SearchScreen()),
             ),
             child: Container(
@@ -246,7 +246,9 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
               ),
               const Spacer(),
               GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
+                onTap: () => Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(builder: (_) => const SearchScreen()),
+                ),
                 child: Container(
                   width: 40.r,
                   height: 40.r,
@@ -928,10 +930,7 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
                 cover: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      c.coverUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(color: accent),
+                    HatriImage(url: c.coverUrl, fit: BoxFit.cover, errorWidget: Container(color: accent),
                     ),
                     Positioned.fill(
                       child: Opacity(
@@ -1263,8 +1262,8 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          Image.network(
-                            c.coverUrl,
+                          HatriImage(
+                            url: c.coverUrl,
                             fit: BoxFit.cover,
                           ),
                           Container(
@@ -1653,10 +1652,7 @@ class _PhotoRollItem extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        entry.photo.photoUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(color: AppColors.surfaceRaised),
+                      HatriImage(url: entry.photo.photoUrl, fit: BoxFit.cover, errorWidget: Container(color: AppColors.surfaceRaised),
                       ),
                       if (entry.photo.youAreIn)
                         Positioned(
@@ -1898,10 +1894,7 @@ class _StampCardState extends State<_StampCard> with SingleTickerProviderStateMi
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.network(
-                          c.coverUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(color: accent.withValues(alpha: 0.3)),
+                        HatriImage(url: c.coverUrl, fit: BoxFit.cover, errorWidget: Container(color: accent.withValues(alpha: 0.3)),
                         ),
                         // Type chip (top-left)
                         Positioned(

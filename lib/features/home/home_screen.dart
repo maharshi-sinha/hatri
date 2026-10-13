@@ -325,7 +325,9 @@ class _TopBar extends StatelessWidget {
           ),
           const Spacer(),
           _iconButton(context, 'assets/icons/Search.svg', onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
+            );
           }),
           SizedBox(width: 8.r),
           AnimatedBuilder(

@@ -1,22 +1,25 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
+import '../../backend/services/events_service.dart';
+import '../../core/di/injection_container.dart';
 import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/communities/bloc/communities_state.dart';
 import '../../features/communities/community_details_screen.dart';
-import '../../features/events/bloc/events_bloc.dart';
-import '../../features/events/bloc/events_state.dart';
 import '../../features/events/event_details_screen.dart';
 
-/// Search across events + scenes by title, venue, organizer, category, and
-/// location. Live-filters as the user types. Empty query → prompt state.
-/// Query with zero matches → mascot empty state.
+/// Search across events (API) + scenes (local, since no backend endpoint
+/// exists for scenes yet). Debounces input by 300ms so one HTTP request
+/// fires per thought rather than per keystroke.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -27,32 +30,57 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
   String _query = '';
+  Timer? _debounce;
+  List<Event> _eventResults = const [];
+  bool _searching = false;
+  int _requestSeq = 0;
 
   @override
   void initState() {
     super.initState();
-    _controller.addListener(() {
-      final q = _controller.text.trim();
-      if (q == _query) return;
-      setState(() => _query = q);
-    });
+    _controller.addListener(_onInputChanged);
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _controller.removeListener(_onInputChanged);
     _controller.dispose();
     super.dispose();
   }
 
-  List<Event> _matchEvents(List<Event> events) {
-    if (_query.isEmpty) return const [];
-    final q = _query.toLowerCase();
-    return events.where((e) {
-      return e.title.toLowerCase().contains(q) ||
-          e.venue.toLowerCase().contains(q) ||
-          e.organizer.toLowerCase().contains(q) ||
-          e.category.label.toLowerCase().contains(q);
-    }).toList();
+  void _onInputChanged() {
+    final q = _controller.text.trim();
+    if (q == _query) return;
+    setState(() => _query = q);
+
+    // 300ms debounce keeps us from firing a request per keystroke. Reset
+    // the timer on every edit so only the pause fires the search.
+    _debounce?.cancel();
+    if (q.isEmpty) {
+      setState(() {
+        _eventResults = const [];
+        _searching = false;
+      });
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 300), _runSearch);
+  }
+
+  /// Request-sequence number guards against out-of-order responses: if the
+  /// user types fast and an older request completes after a newer one, we
+  /// drop the stale response instead of flashing stale results in.
+  Future<void> _runSearch() async {
+    final q = _query;
+    if (q.isEmpty) return;
+    final seq = ++_requestSeq;
+    setState(() => _searching = true);
+    final results = await sl<EventsService>().search(query: q);
+    if (!mounted || seq != _requestSeq) return;
+    setState(() {
+      _eventResults = results;
+      _searching = false;
+    });
   }
 
   List<Community> _matchScenes(List<Community> scenes) {
@@ -185,16 +213,27 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildBody() {
     if (_query.isEmpty) return _buildPrompt();
-    return BlocBuilder<EventsBloc, EventsState>(
-      builder: (context, eventsState) {
-        final events = eventsState is EventsLoaded ? _matchEvents(eventsState.events) : <Event>[];
-        return BlocBuilder<CommunitiesBloc, CommunitiesState>(
-          builder: (context, commsState) {
-            final scenes = commsState is CommunitiesLoaded ? _matchScenes(commsState.communities) : <Community>[];
-            if (events.isEmpty && scenes.isEmpty) return _buildNoResults();
-            return _buildResults(events, scenes);
-          },
-        );
+    return BlocBuilder<CommunitiesBloc, CommunitiesState>(
+      builder: (context, commsState) {
+        final scenes = commsState is CommunitiesLoaded
+            ? _matchScenes(commsState.communities)
+            : <Community>[];
+        // Show a quiet loader while the first API search is in flight so
+        // the UI doesn't flash "no results" during that round-trip.
+        if (_searching && _eventResults.isEmpty && scenes.isEmpty) {
+          return const Center(
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.4,
+                color: AppColors.fuchsia,
+              ),
+            ),
+          );
+        }
+        if (_eventResults.isEmpty && scenes.isEmpty) return _buildNoResults();
+        return _buildResults(_eventResults, scenes);
       },
     );
   }
@@ -368,10 +407,7 @@ class _EventResultTile extends StatelessWidget {
               child: SizedBox(
                 width: 56.r,
                 height: 56.r,
-                child: Image.network(
-                  event.coverUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(color: accent),
+                child: HatriImage(url: event.coverUrl, fit: BoxFit.cover, errorWidget: Container(color: accent),
                 ),
               ),
             ),
@@ -468,10 +504,7 @@ class _SceneResultTile extends StatelessWidget {
               child: SizedBox(
                 width: 56.r,
                 height: 56.r,
-                child: Image.network(
-                  community.coverUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(color: accent),
+                child: HatriImage(url: community.coverUrl, fit: BoxFit.cover, errorWidget: Container(color: accent),
                 ),
               ),
             ),

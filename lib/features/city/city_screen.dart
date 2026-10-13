@@ -138,7 +138,9 @@ class _Header extends StatelessWidget {
           GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(builder: (_) => const SearchScreen()),
+              );
             },
             child: Container(
               width: 42.r,
