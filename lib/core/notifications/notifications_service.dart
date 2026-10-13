@@ -13,6 +13,7 @@ import '../../features/events/event_details_screen.dart';
 import '../analytics/analytics_service.dart';
 import '../di/injection_container.dart';
 import '../routing/app_router.dart';
+import 'notifications_store.dart';
 
 /// Push notifications wrapper.
 ///
@@ -139,6 +140,12 @@ class NotificationsService {
           ._trackPush('received', message.data),
     );
 
+    // Mirror into the in-app inbox so the bell + Notifications screen stay in
+    // sync with what the OS tray shows. Done for every FCM arrival, not just
+    // the ones that produce a system notification, so data-only pushes still
+    // show up in the inbox.
+    _mirrorToStore(message);
+
     final notif = message.notification;
     if (notif == null) return;
     // Mint a stable id so Android dedupes if the same push arrives twice.
@@ -197,11 +204,17 @@ class NotificationsService {
     final data = _decodePayload(payload);
     final eventId = data['eventId'];
     if (eventId == null || eventId.isEmpty) return;
+    await openEventById(eventId);
+  }
 
+  /// Resolve an event id and push its details screen on the root navigator.
+  /// Shared between FCM system-tray taps and in-app notifications-list taps.
+  Future<void> openEventById(String eventId) async {
     final nav = rootNavigatorKey.currentState;
     if (nav == null) {
       // Navigator not mounted yet — try again on next frame.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _handleTap(payload));
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => openEventById(eventId));
       return;
     }
     try {
@@ -211,6 +224,46 @@ class NotificationsService {
       );
     } catch (e) {
       debugPrint('push tap resolve failed for event $eventId: $e');
+    }
+  }
+
+  /// Converts an incoming FCM message into a [HatriNotification] and pushes
+  /// it onto [NotificationsStore]. The `type` field in the FCM data payload
+  /// picks the icon/accent on the inbox card.
+  void _mirrorToStore(RemoteMessage message) {
+    final data = message.data;
+    final notif = message.notification;
+    final title =
+        notif?.title ?? data['title']?.toString() ?? 'Hatri';
+    final body = notif?.body ?? data['body']?.toString() ?? '';
+    final id = message.messageId ??
+        'push-${DateTime.now().microsecondsSinceEpoch}';
+    final eventId = data['eventId']?.toString();
+    final type = data['type']?.toString();
+    NotificationsStore.instance.push(
+      HatriNotification(
+        id: id,
+        kind: _kindForType(type),
+        title: title,
+        subtitle: body,
+        timestamp: DateTime.now(),
+        deepLinkEventId: (eventId != null && eventId.isNotEmpty) ? eventId : null,
+      ),
+    );
+  }
+
+  HatriNotificationKind _kindForType(String? type) {
+    switch (type) {
+      case 'ticket_confirmed':
+        return HatriNotificationKind.ticketSuccess;
+      case 'ticket_failed':
+        return HatriNotificationKind.ticketFailed;
+      case 'event_reminder':
+        return HatriNotificationKind.eventReminder;
+      case 'scene_update':
+        return HatriNotificationKind.sceneUpdate;
+      default:
+        return HatriNotificationKind.systemInfo;
     }
   }
 }

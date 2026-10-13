@@ -4,10 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../backend/services/auth_service.dart';
+import '../../core/di/injection_container.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Splash — plays an intro video with sound, no controls, then routes
-/// to /welcome when the clip ends (or after a safety timeout / on error).
+/// to home if the user is signed in or /welcome otherwise. Auth state is
+/// already resolved by the time this screen runs because main.dart awaits
+/// bootAuth before runApp.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -55,7 +59,8 @@ class _SplashScreenState extends State<SplashScreen> {
     if (_navigated || !mounted) return;
     _navigated = true;
     _safety?.cancel();
-    context.go('/welcome');
+    final signedIn = sl<AuthService>().isSignedIn;
+    context.go(signedIn ? '/' : '/welcome');
   }
 
   @override

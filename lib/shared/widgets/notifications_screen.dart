@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../core/di/injection_container.dart';
+import '../../core/notifications/notifications_service.dart';
 import '../../core/notifications/notifications_store.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/responsive/responsive.dart';
@@ -188,10 +190,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return _SwipeToDeleteRow(
           key: ValueKey(item.id),
           onDelete: () => _store.remove(item.id),
-          child: _NotificationCard(item: item),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _openItem(item),
+            child: _NotificationCard(item: item),
+          ),
         );
       },
     );
+  }
+
+  void _openItem(HatriNotification item) {
+    HapticFeedback.selectionClick();
+    _store.markRead(item.id);
+    final eventId = item.deepLinkEventId;
+    if (eventId == null || eventId.isEmpty) return;
+    sl<NotificationsService>().openEventById(eventId);
   }
 }
 
