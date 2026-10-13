@@ -98,6 +98,9 @@ dependencies:
   # MSG91 official Flutter SDK for mobile OTP (SMS without DLT).
   sendotp_flutter_sdk: ^0.0.2
 
+  # Crisp chat support widget — embedded via webview inside SupportChatScreen.
+  webview_flutter: ^4.10.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

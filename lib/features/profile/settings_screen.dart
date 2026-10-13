@@ -11,14 +11,11 @@ import '../../core/di/injection_container.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../features/auth/interest_selection_screen.dart';
+import '../../features/support/support_chat_screen.dart';
 import '../../shared/design/hatri_snack.dart';
 import '../../shared/design/motifs.dart';
 import 'edit_profile_screen.dart';
 
-/// Support inbox. TODO: swap to the real address once the Hostinger forwarder
-/// (or Zoho mailbox) is set up for hatri.online. Changing it here updates
-/// every mailto link in the app.
-const _supportEmail = 'hello@hatri.online';
 const _privacyUrl = 'https://hatri.online/privacy';
 const _termsUrl = 'https://hatri.online/terms';
 
@@ -68,17 +65,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   _SectionLabel(label: 'SUPPORT', accent: AppColors.indigo),
                   _SettingsRow(
-                    icon: Icons.help_outline_rounded,
+                    icon: Icons.chat_bubble_outline_rounded,
                     tint: AppColors.indigo,
-                    title: 'Help center',
-                    subtitle: 'get in touch via email',
-                    onTap: () => _openContactSheet(context),
-                  ),
-                  _SettingsRow(
-                    icon: Icons.flag_outlined,
-                    tint: AppColors.indigo,
-                    title: 'Report a problem',
-                    onTap: () => _openContactSheet(context, topic: 'bug'),
+                    title: 'Help & support',
+                    subtitle: 'chat with us. we usually reply within a few hours',
+                    onTap: () => _openSupportChat(context),
                   ),
                   const _AboutRow(),
                   _SectionLabel(label: 'DANGER ZONE', accent: AppColors.fuchsia),
@@ -120,30 +111,26 @@ class SettingsScreen extends StatelessWidget {
 
   Future<void> _openUrl(BuildContext context, String url) async {
     HapticFeedback.selectionClick();
+    // inAppBrowserView uses SFSafariViewController on iOS and Chrome Custom
+    // Tabs on Android. Looks native, dismiss gesture built-in, no app switch.
     final ok = await launchUrl(
       Uri.parse(url),
-      mode: LaunchMode.externalApplication,
+      mode: LaunchMode.inAppBrowserView,
     );
     if (!ok && context.mounted) {
       HatriSnack.show(
         context,
-        "couldn't open the browser.",
+        "couldn't open the page.",
         vibe: SnackVibe.info,
         emoji: '⚠️',
       );
     }
   }
 
-  Future<void> _openContactSheet(BuildContext context, {String? topic}) async {
+  void _openSupportChat(BuildContext context) {
     HapticFeedback.selectionClick();
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.graphite,
-      isScrollControlled: true,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(Corners.lg)),
-      ),
-      builder: (_) => _ContactSheet(initialTopic: topic),
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(builder: (_) => const SupportChatScreen()),
     );
   }
 
@@ -775,152 +762,3 @@ class _AboutRow extends StatelessWidget {
   }
 }
 
-// ─── Contact sheet (predefined topics → opens mail app) ────────────────────
-
-class _ContactSheet extends StatelessWidget {
-  final String? initialTopic;
-  const _ContactSheet({this.initialTopic});
-
-  static const _topics = <(String, String, IconData)>[
-    ('account', 'account access', Icons.lock_person_outlined),
-    ('event', 'event issue', Icons.event_available_outlined),
-    ('ticket', 'ticket not working', Icons.confirmation_number_outlined),
-    ('bug', 'something is broken', Icons.bug_report_outlined),
-    ('other', 'something else', Icons.chat_bubble_outline_rounded),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(Insets.lg, 16.r, Insets.lg, 24.r),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44.r,
-                height: 4.r,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            SizedBox(height: 18.r),
-            Text(
-              'TALK TO US',
-              style: TextStyle(
-                fontFamily: 'ClashDisplay',
-                fontWeight: FontWeight.w800,
-                fontSize: 24.sp,
-                letterSpacing: -0.4.sp,
-                color: AppColors.paper,
-              ),
-            ),
-            SizedBox(height: 6.r),
-            Text(
-              "pick what's up. we'll open your mail app, pre-filled.",
-              style: TextStyle(
-                fontFamily: 'GeneralSans',
-                fontWeight: FontWeight.w500,
-                fontSize: 13.sp,
-                color: AppColors.muted,
-              ),
-            ),
-            SizedBox(height: 18.r),
-            ..._topics.map(
-              (t) => Padding(
-                padding: EdgeInsets.only(bottom: 10.r),
-                child: _ContactTopicChip(
-                  id: t.$1,
-                  label: t.$2,
-                  icon: t.$3,
-                  highlighted: initialTopic == t.$1,
-                  onTap: () => _sendMail(context, t.$1, t.$2),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _sendMail(BuildContext context, String id, String label) async {
-    HapticFeedback.selectionClick();
-    final subject = Uri.encodeComponent('[hatri · $id] $label');
-    final body = Uri.encodeComponent(
-      "describe the issue in a sentence or two:\n\n\n"
-      "---\n"
-      "(automated bits, leave as is)\n",
-    );
-    final uri = Uri.parse('mailto:$_supportEmail?subject=$subject&body=$body');
-    final ok = await launchUrl(uri);
-    if (!ok && context.mounted) {
-      HatriSnack.show(
-        context,
-        "no mail app set up. email us at $_supportEmail",
-        vibe: SnackVibe.info,
-        emoji: '📬',
-      );
-      return;
-    }
-    if (context.mounted) Navigator.of(context).pop();
-  }
-}
-
-class _ContactTopicChip extends StatelessWidget {
-  final String id;
-  final String label;
-  final IconData icon;
-  final bool highlighted;
-  final VoidCallback onTap;
-  const _ContactTopicChip({
-    required this.id,
-    required this.label,
-    required this.icon,
-    required this.highlighted,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = highlighted ? AppColors.fuchsia : AppColors.paper;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(Corners.md),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14.r, vertical: 14.r),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceRaised,
-          border: Border.all(
-            color: highlighted ? accent.withValues(alpha: 0.55) : AppColors.border,
-            width: highlighted ? 1.4 : 1.0,
-          ),
-          borderRadius: BorderRadius.circular(Corners.md),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: accent, size: 20.r),
-            SizedBox(width: 12.r),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'GeneralSans',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14.sp,
-                  color: AppColors.paper,
-                ),
-              ),
-            ),
-            Icon(Icons.arrow_forward_rounded, color: AppColors.muted, size: 18.r),
-          ],
-        ),
-      ),
-    );
-  }
-}

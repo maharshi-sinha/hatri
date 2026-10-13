@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_theme.dart';
+import '../../backend/services/user_service.dart';
+import '../../core/di/injection_container.dart';
 import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
+import '../../core/theme/app_theme.dart';
+import '../../shared/design/hatri_snack.dart';
 
 class Interest {
   final String id;
@@ -53,6 +56,34 @@ class _InterestSelectionScreenState extends State<InterestSelectionScreen> {
   late final Set<String> _selectedInterests = widget.isEditMode
       ? currentUser.interests.toSet()
       : <String>{};
+  bool _saving = false;
+
+  Future<void> _onContinue() async {
+    if (_saving) return;
+    currentUser.interests = _selectedInterests.toList();
+    if (!widget.isEditMode) {
+      context.go('/user-details');
+      return;
+    }
+    // Edit mode persists through the backend so the change survives a
+    // relaunch. installUserSync will re-mirror currentUser from the
+    // refreshed ApiUser once updateCachedUser fires.
+    setState(() => _saving = true);
+    try {
+      await sl<UserService>().updateProfile(interests: _selectedInterests.toList());
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      HatriSnack.show(
+        context,
+        "couldn't save. check your connection and try again.",
+        vibe: SnackVibe.info,
+        emoji: '⚠️',
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -247,16 +278,7 @@ class _InterestSelectionScreenState extends State<InterestSelectionScreen> {
             Padding(
               padding: EdgeInsets.fromLTRB(28.r, 8.r, 28.r, 20.r),
               child: ElevatedButton(
-                onPressed: enough
-                    ? () {
-                        currentUser.interests = _selectedInterests.toList();
-                        if (widget.isEditMode) {
-                          Navigator.of(context).pop(true);
-                        } else {
-                          context.go('/user-details');
-                        }
-                      }
-                    : null,
+                onPressed: (enough && !_saving) ? _onContinue : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: enough ? AppColors.accentGreen : AppColors.card,
                   disabledBackgroundColor: AppColors.card,
@@ -269,7 +291,7 @@ class _InterestSelectionScreenState extends State<InterestSelectionScreen> {
                   elevation: 0,
                 ),
                 child: Text(
-                  "CONTINUE",
+                  _saving ? "SAVING…" : "CONTINUE",
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2.sp,
