@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/analytics/analytics_service.dart';
 import 'core/auth/user_sync.dart';
 import 'core/deeplinks/deeplink_handler.dart';
+import 'core/geo/city_resolver.dart';
 import 'core/notifications/notifications_service.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/responsive/responsive.dart';
@@ -62,6 +63,10 @@ void main() async {
     installUserSync();
     // Fire-and-forget: analytics init shouldn't delay first paint.
     unawaited(di.sl<AnalyticsService>().init());
+    // Catch-up for accounts created before the geo flow existed: silently
+    // resolve the nearest active city if we have location permission and
+    // the backend hasn't got one on file yet. Never blocks boot.
+    unawaited(di.sl<GeoCityResolver>().tryResolveSilently());
     // Register FCM channel + listeners. If a user is already signed in from a
     // previous session, also push a fresh token up to backend.
     unawaited(() async {

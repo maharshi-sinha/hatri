@@ -27,6 +27,8 @@ void _hydrate(AuthService auth) {
     currentUser.gender = '';
     currentUser.energy = '';
     currentUser.interests = const [];
+    currentUser.homeCitySlug = '';
+    currentUser.currentCitySlug = '';
     return;
   }
   currentUser.name = u.displayName ?? '';
@@ -36,4 +38,6 @@ void _hydrate(AuthService auth) {
   currentUser.gender = u.gender ?? '';
   currentUser.energy = u.energy ?? '';
   currentUser.interests = List<String>.from(u.interests);
+  currentUser.homeCitySlug = u.homeCitySlug ?? '';
+  currentUser.currentCitySlug = u.currentCitySlug ?? '';
 }

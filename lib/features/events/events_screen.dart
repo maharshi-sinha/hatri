@@ -48,6 +48,16 @@ class EventsScreen extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
+  /// Reads the user's resolved city off `currentUser.currentCitySlug`
+  /// (populated from GPS at onboarding or on silent catch-up) and renders
+  /// it as "{SLUG} SCENE". Falls back to a plain "SCENE" label when we
+  /// haven't resolved yet so we don't lie to the user.
+  String _sceneLabel() {
+    final slug = currentUser.currentCitySlug;
+    if (slug.isEmpty) return 'SCENE';
+    return '${slug.toUpperCase().replaceAll('-', ' ')} SCENE';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -65,7 +75,7 @@ class _Header extends StatelessWidget {
                     BurstStar(size: 12.r, color: AppColors.fuchsia),
                     SizedBox(width: 6.r),
                     Text(
-                      'RAIPUR SCENE',
+                      _sceneLabel(),
                       style: TextStyle(
                         fontFamily: 'GeneralSans',
                         fontWeight: FontWeight.w700,

@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../core/di/injection_container.dart';
+import '../../core/geo/city_resolver.dart';
+import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/motifs.dart';
@@ -86,9 +91,22 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
     HapticFeedback.mediumImpact();
     _bob.stop();
     setState(() => _confirmed = true);
+    // Fire-and-forget: resolve nearest active Hatri city from device GPS
+    // and stash it on currentUser so the celebration screen PATCHes it to
+    // the backend along with the rest of the profile. If this fails
+    // (airplane mode, GPS off), we just move on without a city — the
+    // signed-in boot path will try again later.
+    unawaited(_stashNearestCity());
     await Future<void>.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
     context.go('/phone');
+  }
+
+  Future<void> _stashNearestCity() async {
+    final slug = await sl<GeoCityResolver>().resolveNearest();
+    if (slug == null) return;
+    currentUser.homeCitySlug = slug;
+    currentUser.currentCitySlug = slug;
   }
 
   @override

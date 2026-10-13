@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 
 import '../../backend/api/auth_api.dart';
+import '../../backend/api/cities_api.dart';
 import '../../backend/api/events_api.dart';
 import '../../backend/api/http_client.dart';
 import '../../backend/api/makers_api.dart';
@@ -14,6 +15,7 @@ import '../../backend/services/user_service.dart';
 import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/events/bloc/events_bloc.dart';
 import '../analytics/analytics_service.dart';
+import '../geo/city_resolver.dart';
 import '../notifications/notifications_service.dart';
 import '../repositories/backend_event_repository.dart';
 import '../repositories/community_repository.dart';
@@ -32,6 +34,8 @@ void init() {
   sl.registerLazySingleton<EventsApi>(() => EventsApi(sl<HttpClient>()));
   sl.registerLazySingleton<MakersApi>(() => MakersApi(sl<HttpClient>()));
   sl.registerLazySingleton<TicketsApi>(() => TicketsApi(sl<HttpClient>()));
+  sl.registerLazySingleton<CitiesApi>(() => CitiesApi(sl<HttpClient>()));
+  sl.registerLazySingleton<GeoCityResolver>(() => GeoCityResolver(sl<CitiesApi>()));
 
   // ─── Services ───
   sl.registerLazySingleton<AuthService>(

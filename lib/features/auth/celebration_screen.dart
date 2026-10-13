@@ -49,6 +49,11 @@ class _CelebrationScreenState extends State<CelebrationScreen>
         bio: currentUser.bio.isEmpty ? null : currentUser.bio,
         gender: currentUser.gender.isEmpty ? null : currentUser.gender,
         energy: currentUser.energy.isEmpty ? null : currentUser.energy,
+        homeCitySlug:
+            currentUser.homeCitySlug.isEmpty ? null : currentUser.homeCitySlug,
+        currentCitySlug: currentUser.currentCitySlug.isEmpty
+            ? null
+            : currentUser.currentCitySlug,
       );
     } catch (e) {
       debugPrint('Profile PATCH failed (non-fatal): $e');

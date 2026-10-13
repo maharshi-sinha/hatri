@@ -410,6 +410,8 @@ class User {
   String birthday;
   String gender;
   String energy; // 'Introvert' | 'Extrovert' | 'Ambivert'
+  String homeCitySlug;    // '' when unresolved
+  String currentCitySlug; // '' when unresolved
 
   User({
     this.name = '',
@@ -424,6 +426,8 @@ class User {
     this.birthday = '',
     this.gender = '',
     this.energy = '',
+    this.homeCitySlug = '',
+    this.currentCitySlug = '',
   });
 }
 

@@ -17,6 +17,11 @@ class ApiUser {
   /// Mood pings only (morning + evening + birthday). Essential notifications
   /// like ticket confirmed and event reminders fire regardless.
   final bool pushDailyVibes;
+  /// Nearest Hatri-live city resolved from the user's device location on
+  /// first grant. Null when location was never granted or we haven't
+  /// resolved yet. Powers the "RAIPUR SCENE" label on the events feed.
+  final String? homeCitySlug;
+  final String? currentCitySlug;
 
   const ApiUser({
     required this.id,
@@ -30,6 +35,8 @@ class ApiUser {
     required this.interests,
     required this.roles,
     required this.pushDailyVibes,
+    required this.homeCitySlug,
+    required this.currentCitySlug,
   });
 
   factory ApiUser.fromJson(Map<String, dynamic> json) => ApiUser(
@@ -48,6 +55,8 @@ class ApiUser {
             .map((e) => e as String)
             .toList(),
         pushDailyVibes: json['pushDailyVibes'] as bool? ?? true,
+        homeCitySlug: json['homeCitySlug'] as String?,
+        currentCitySlug: json['currentCitySlug'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -62,6 +71,8 @@ class ApiUser {
         'interests': interests,
         'roles': roles,
         'pushDailyVibes': pushDailyVibes,
+        'homeCitySlug': homeCitySlug,
+        'currentCitySlug': currentCitySlug,
       };
 }
 
