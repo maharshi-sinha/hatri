@@ -48,9 +48,15 @@ void main() async {
     );
     // Collect crashes on every build and every platform. We'd rather see dev
     // noise than miss a real production crash because we forgot to flip a flag.
-    // Filter the dashboard later with Crashlytics' "velocity alerts" if needed.
     await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    // Framework errors (layout overflows, image load failures, animation
+    // glitches) are visible glitches but not crashes — report them as
+    // non-fatal so they stay visible without tanking the crash-free users
+    // metric. Only truly uncaught async errors (caught by runZonedGuarded
+    // and PlatformDispatcher.onError below) count as fatal.
+    FlutterError.onError = (details) {
+      FirebaseCrashlytics.instance.recordFlutterError(details);
+    };
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
       return true;
