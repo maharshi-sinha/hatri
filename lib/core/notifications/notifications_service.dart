@@ -259,10 +259,15 @@ class NotificationsService {
       case 'ticket_failed':
         return HatriNotificationKind.ticketFailed;
       case 'event_reminder':
+      case 'event_reminder_1d':
+      case 'event_reminder_3h':
+      case 'event_reminder_30m':
         return HatriNotificationKind.eventReminder;
       case 'scene_update':
         return HatriNotificationKind.sceneUpdate;
       default:
+        // Daily morning/evening pings and birthday pings fall through here
+        // and show in the inbox as system-info rows. Fine for v1.
         return HatriNotificationKind.systemInfo;
     }
   }
