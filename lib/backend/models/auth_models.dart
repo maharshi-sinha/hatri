@@ -9,6 +9,9 @@ class ApiUser {
   final String? bio;
   final String? gender;
   final String? energy;
+  /// ISO date `YYYY-MM-DD`. Backend sends a full ISO datetime; we store just
+  /// the date part since onboarding only captures the day.
+  final String? dob;
   final List<String> interests;
   final List<String> roles;
 
@@ -20,6 +23,7 @@ class ApiUser {
     required this.bio,
     required this.gender,
     required this.energy,
+    required this.dob,
     required this.interests,
     required this.roles,
   });
@@ -32,6 +36,7 @@ class ApiUser {
         bio: json['bio'] as String?,
         gender: json['gender'] as String?,
         energy: json['energy'] as String?,
+        dob: (json['dob'] as String?)?.split('T').first,
         interests: (json['interests'] as List<dynamic>? ?? const [])
             .map((e) => e as String)
             .toList(),
@@ -48,6 +53,7 @@ class ApiUser {
         'bio': bio,
         'gender': gender,
         'energy': energy,
+        'dob': dob,
         'interests': interests,
         'roles': roles,
       };

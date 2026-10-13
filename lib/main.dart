@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/analytics/analytics_service.dart';
+import 'core/auth/user_sync.dart';
 import 'core/deeplinks/deeplink_handler.dart';
 import 'core/notifications/notifications_service.dart';
 import 'core/di/injection_container.dart' as di;
@@ -56,6 +57,9 @@ void main() async {
 
     di.init();
     await di.bootAuth();
+    // Mirror the restored ApiUser into the mock-era `currentUser` global
+    // so the profile tab shows real data instead of the AAROHI placeholder.
+    installUserSync();
     // Fire-and-forget: analytics init shouldn't delay first paint.
     unawaited(di.sl<AnalyticsService>().init());
     // Register FCM channel + listeners. If a user is already signed in from a
