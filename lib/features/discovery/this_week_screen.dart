@@ -9,6 +9,7 @@ import '../../core/repositories/creator_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
+import '../../shared/widgets/shimmer_skeletons.dart';
 import '../../shared/widgets/small_event_card.dart';
 import '../creators/creator_profile_screen.dart';
 import '../events/bloc/events_bloc.dart';
@@ -70,7 +71,10 @@ class _ThisWeekScreenState extends State<ThisWeekScreen> {
         child: BlocBuilder<EventsBloc, EventsState>(
           builder: (context, state) {
             if (state is EventsLoading || state is EventsInitial) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.fuchsia));
+              return Padding(
+                padding: EdgeInsets.fromLTRB(Insets.lg, 24.r, Insets.lg, 40.r),
+                child: const ShimmerEventStack(count: 4),
+              );
             }
             if (state is! EventsLoaded) {
               return const SizedBox.shrink();

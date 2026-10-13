@@ -12,6 +12,7 @@ import '../../shared/design/motifs.dart';
 import '../../shared/widgets/burst_star.dart';
 import '../../shared/widgets/community_card.dart';
 import '../../shared/widgets/kinetic_marquee.dart';
+import '../../shared/widgets/shimmer_skeletons.dart';
 import '../../shared/widgets/search_screen.dart';
 import 'bloc/communities_bloc.dart';
 import 'bloc/communities_state.dart';
@@ -57,7 +58,10 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
         child: BlocBuilder<CommunitiesBloc, CommunitiesState>(
           builder: (context, state) {
             if (state is CommunitiesLoading || state is CommunitiesInitial) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.fuchsia));
+              return Padding(
+                padding: EdgeInsets.fromLTRB(Insets.lg, 24.r, Insets.lg, 40.r),
+                child: const ShimmerCommunityStack(count: 6),
+              );
             }
             if (state is! CommunitiesLoaded) return const SizedBox.shrink();
 

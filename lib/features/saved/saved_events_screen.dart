@@ -7,6 +7,7 @@ import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/saved/saved_events_store.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/shimmer_skeletons.dart';
 import '../../shared/widgets/small_event_card.dart';
 import '../events/bloc/events_bloc.dart';
 import '../events/bloc/events_state.dart';
@@ -103,7 +104,10 @@ class _SavedEventsScreenState extends State<SavedEventsScreen> {
     return BlocBuilder<EventsBloc, EventsState>(
       builder: (context, state) {
         if (state is! EventsLoaded) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.fuchsia));
+          return Padding(
+            padding: EdgeInsets.fromLTRB(Insets.lg, 16.r, Insets.lg, 40.r),
+            child: const ShimmerEventGrid(count: 6),
+          );
         }
         final saved = state.events.where((e) => _store.isSaved(e.id)).toList();
         if (saved.isEmpty) return _buildEmpty();

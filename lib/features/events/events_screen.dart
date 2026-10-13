@@ -8,6 +8,7 @@ import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
 import '../../shared/widgets/burst_star.dart';
 import '../../shared/widgets/kinetic_marquee.dart';
+import '../../shared/widgets/shimmer_skeletons.dart';
 import '../../shared/widgets/small_event_card.dart';
 import 'bloc/events_bloc.dart';
 import 'bloc/events_event.dart';
@@ -491,11 +492,9 @@ class _EventsSliverGrid extends StatelessWidget {
     return BlocBuilder<EventsBloc, EventsState>(
       builder: (context, state) {
         if (state is EventsLoading) {
-          return const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(child: CircularProgressIndicator(color: AppColors.fuchsia)),
-            ),
+          return SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: Insets.lg, vertical: 8.r),
+            sliver: const SliverToBoxAdapter(child: ShimmerEventGrid(count: 6)),
           );
         }
         if (state is EventsLoaded) {

@@ -7,6 +7,7 @@ import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/community_card.dart';
+import '../../shared/widgets/shimmer_skeletons.dart';
 import '../communities/bloc/communities_bloc.dart';
 import '../communities/bloc/communities_state.dart';
 import '../communities/community_details_screen.dart';
@@ -84,7 +85,10 @@ class _MyCommunitiesScreenState extends State<MyCommunitiesScreen> {
     return BlocBuilder<CommunitiesBloc, CommunitiesState>(
       builder: (context, state) {
         if (state is! CommunitiesLoaded) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.fuchsia));
+          return Padding(
+            padding: EdgeInsets.fromLTRB(Insets.lg, 16.r, Insets.lg, 40.r),
+            child: const ShimmerCommunityStack(count: 5),
+          );
         }
         final joined = state.communities
             .where((c) => AppCommunities.joinedIds.contains(c.id))

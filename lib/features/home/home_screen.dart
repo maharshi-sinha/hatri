@@ -18,6 +18,7 @@ import '../../shared/widgets/event_card.dart';
 import '../../shared/widgets/maker_rail.dart';
 import '../../shared/widgets/small_event_card.dart';
 import '../../shared/widgets/pull_reveal.dart';
+import '../../shared/widgets/shimmer_skeletons.dart';
 import '../../shared/widgets/stacked_hero_carousel.dart';
 import '../../shared/widgets/ticker_widget.dart';
 import '../../shared/widgets/notifications_screen.dart';
@@ -113,8 +114,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (context, state) {
                     if (state is EventsLoading) {
                       return Padding(
-                        padding: EdgeInsets.symmetric(vertical: 120.r),
-                        child: Center(child: CircularProgressIndicator(color: AppColors.fuchsia)),
+                        padding: EdgeInsets.fromLTRB(
+                            Insets.lg, 24.r, Insets.lg, 40.r),
+                        child: const ShimmerEventStack(count: 4),
                       );
                     }
                     if (state is EventsLoaded) {

@@ -9,6 +9,7 @@ import '../../core/repositories/event_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
+import '../../shared/widgets/shimmer_skeletons.dart';
 import '../../shared/widgets/small_event_card.dart';
 import '../events/event_details_screen.dart';
 import '../../core/responsive/responsive.dart';
@@ -519,7 +520,10 @@ class _CreatorProfileScreenState extends State<CreatorProfileScreen>
 
   Widget _buildEventList(List<Event> events, {required String emptyText}) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.fuchsia));
+      return Padding(
+        padding: EdgeInsets.fromLTRB(Insets.lg, 16.r, Insets.lg, 24.r),
+        child: const ShimmerEventStack(count: 3),
+      );
     }
     if (events.isEmpty) {
       return Center(
