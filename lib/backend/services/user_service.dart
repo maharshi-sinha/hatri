@@ -25,9 +25,7 @@ class UserService {
     String? bio,
     String? gender,
     String? energy,
-    bool? pushMorning,
-    bool? pushEvening,
-    bool? pushReminders,
+    bool? pushDailyVibes,
   }) async {
     final body = <String, dynamic>{
       if (displayName != null) 'displayName': displayName,
@@ -38,9 +36,7 @@ class UserService {
       if (bio != null) 'bio': bio,
       if (gender != null) 'gender': gender,
       if (energy != null) 'energy': energy,
-      if (pushMorning != null) 'pushMorning': pushMorning,
-      if (pushEvening != null) 'pushEvening': pushEvening,
-      if (pushReminders != null) 'pushReminders': pushReminders,
+      if (pushDailyVibes != null) 'pushDailyVibes': pushDailyVibes,
     };
     if (body.isEmpty) {
       // Nothing to patch — just return cached user.

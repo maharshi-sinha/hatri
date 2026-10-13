@@ -14,9 +14,9 @@ class ApiUser {
   final String? dob;
   final List<String> interests;
   final List<String> roles;
-  final bool pushMorning;
-  final bool pushEvening;
-  final bool pushReminders;
+  /// Mood pings only (morning + evening + birthday). Essential notifications
+  /// like ticket confirmed and event reminders fire regardless.
+  final bool pushDailyVibes;
 
   const ApiUser({
     required this.id,
@@ -29,9 +29,7 @@ class ApiUser {
     required this.dob,
     required this.interests,
     required this.roles,
-    required this.pushMorning,
-    required this.pushEvening,
-    required this.pushReminders,
+    required this.pushDailyVibes,
   });
 
   factory ApiUser.fromJson(Map<String, dynamic> json) => ApiUser(
@@ -49,9 +47,7 @@ class ApiUser {
         roles: (json['roles'] as List<dynamic>? ?? const [])
             .map((e) => e as String)
             .toList(),
-        pushMorning: json['pushMorning'] as bool? ?? true,
-        pushEvening: json['pushEvening'] as bool? ?? true,
-        pushReminders: json['pushReminders'] as bool? ?? true,
+        pushDailyVibes: json['pushDailyVibes'] as bool? ?? true,
       );
 
   Map<String, dynamic> toJson() => {
@@ -65,9 +61,7 @@ class ApiUser {
         'dob': dob,
         'interests': interests,
         'roles': roles,
-        'pushMorning': pushMorning,
-        'pushEvening': pushEvening,
-        'pushReminders': pushReminders,
+        'pushDailyVibes': pushDailyVibes,
       };
 }
 

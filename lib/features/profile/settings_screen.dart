@@ -752,45 +752,26 @@ class _NotificationTogglesState extends State<_NotificationToggles> {
   @override
   Widget build(BuildContext context) {
     // Reads straight off AuthService.user so a server-side update (via
-    // updateCachedUser) rebuilds the switches without extra plumbing.
+    // updateCachedUser) rebuilds the switch without extra plumbing.
     return ValueListenableBuilder<AuthState>(
       valueListenable: sl<AuthService>().state,
       builder: (context, authState, _) {
         final u = authState.user;
-        return Column(
-          children: [
-            _ToggleRow(
-              title: 'Morning pings',
-              subtitle: 'soft morning check-ins. 09:00',
-              value: u?.pushMorning ?? true,
-              onChanged: (v) => _toggle('morning', v),
-            ),
-            _ToggleRow(
-              title: 'Evening pings',
-              subtitle: 'where tonight nudges. 18:00',
-              value: u?.pushEvening ?? true,
-              onChanged: (v) => _toggle('evening', v),
-            ),
-            _ToggleRow(
-              title: 'Event reminders',
-              subtitle: 'the day before, 3 hours out, 30 min to go',
-              value: u?.pushReminders ?? true,
-              onChanged: (v) => _toggle('reminders', v),
-            ),
-          ],
+        return _ToggleRow(
+          title: 'Daily vibes',
+          subtitle:
+              "morning + evening slow-start pings. ticket + event reminders always on.",
+          value: u?.pushDailyVibes ?? true,
+          onChanged: _toggle,
         );
       },
     );
   }
 
-  Future<void> _toggle(String kind, bool value) async {
+  Future<void> _toggle(bool value) async {
     HapticFeedback.selectionClick();
     try {
-      await sl<UserService>().updateProfile(
-        pushMorning: kind == 'morning' ? value : null,
-        pushEvening: kind == 'evening' ? value : null,
-        pushReminders: kind == 'reminders' ? value : null,
-      );
+      await sl<UserService>().updateProfile(pushDailyVibes: value);
     } catch (_) {
       if (!mounted) return;
       HatriSnack.show(
