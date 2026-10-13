@@ -40,6 +40,15 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Explicitly disable R8 shrinking + resource shrinking. Newer
+            // Flutter SDKs opt release into R8 by default, which strips
+            // Firebase component registrars (ComponentRegistrar subclasses
+            // referenced only via META-INF/services), causing the native
+            // "FirebaseCrashlytics component is not present" NPE and a
+            // frozen splash on first launch. If we want shrinking later, we
+            // need matching proguard-rules.pro keep rules first.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

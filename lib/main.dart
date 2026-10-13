@@ -43,32 +43,38 @@ void main() async {
       orElse: () => Flavor.prod,
     );
 
-    // Firebase.initializeApp can hang on a flaky network at cold start.
-    // Timeout it so a Firebase hiccup never freezes the whole app on the
-    // native launch screen; if it fails we still boot (Crashlytics +
-    // Analytics calls become no-ops but the user gets the app).
+    // Firebase.initializeApp can hang on a flaky network at cold start AND
+    // the Crashlytics native component can be stripped by R8 on a bad
+    // release build, both of which previously froze the splash. Every
+    // Firebase-touching call below is guarded so a single-step failure
+    // can't block runApp.
+    bool firebaseUp = false;
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       ).timeout(const Duration(seconds: 6));
+      firebaseUp = true;
     } catch (e) {
       debugPrint('Firebase.initializeApp failed or timed out: $e');
     }
-    // Collect crashes on every build and every platform. We'd rather see dev
-    // noise than miss a real production crash because we forgot to flip a flag.
-    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-    // Framework errors (layout overflows, image load failures, animation
-    // glitches) are visible glitches but not crashes — report them as
-    // non-fatal so they stay visible without tanking the crash-free users
-    // metric. Only truly uncaught async errors (caught by runZonedGuarded
-    // and PlatformDispatcher.onError below) count as fatal.
-    FlutterError.onError = (details) {
-      FirebaseCrashlytics.instance.recordFlutterError(details);
-    };
-    PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      return true;
-    };
+
+    // Wire crash reporting only if Firebase is actually up. When it isn't,
+    // we lose remote crash capture for this session but the app still
+    // boots — a far better failure mode than a frozen splash.
+    if (firebaseUp) {
+      try {
+        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+        FlutterError.onError = (details) {
+          FirebaseCrashlytics.instance.recordFlutterError(details);
+        };
+        PlatformDispatcher.instance.onError = (error, stack) {
+          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+          return true;
+        };
+      } catch (e) {
+        debugPrint('Crashlytics setup failed: $e');
+      }
+    }
 
     di.init();
     // bootAuth touches secure storage AND may fire a /auth/refresh HTTP call
@@ -107,7 +113,14 @@ void main() async {
       DeeplinkHandler(rootNavigatorKey: rootNavigatorKey).start();
     });
   }, (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    // Guard: Firebase may have failed to init (see firebaseUp above). If so,
+    // just log and swallow; without this guard the error-handler itself
+    // throws and the zoned future never completes.
+    try {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    } catch (_) {
+      debugPrint('Uncaught error (crashlytics unavailable): $error\n$stack');
+    }
   });
 }
 
