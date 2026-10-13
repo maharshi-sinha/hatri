@@ -43,9 +43,17 @@ void main() async {
       orElse: () => Flavor.prod,
     );
 
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    // Firebase.initializeApp can hang on a flaky network at cold start.
+    // Timeout it so a Firebase hiccup never freezes the whole app on the
+    // native launch screen; if it fails we still boot (Crashlytics +
+    // Analytics calls become no-ops but the user gets the app).
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(seconds: 6));
+    } catch (e) {
+      debugPrint('Firebase.initializeApp failed or timed out: $e');
+    }
     // Collect crashes on every build and every platform. We'd rather see dev
     // noise than miss a real production crash because we forgot to flip a flag.
     await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
@@ -63,7 +71,17 @@ void main() async {
     };
 
     di.init();
-    await di.bootAuth();
+    // bootAuth touches secure storage AND may fire a /auth/refresh HTTP call
+    // if the access token is expired. If the API is slow (Render cold start,
+    // flaky network) and there's no timeout, main() can hang here forever
+    // and runApp() never fires — the user sees the native launch screen
+    // frozen. Cap the wait and move on; init will route to the sign-in
+    // flow by default if auth state is still unresolved.
+    try {
+      await di.bootAuth().timeout(const Duration(seconds: 8));
+    } catch (e) {
+      debugPrint('bootAuth failed or timed out: $e');
+    }
     // Mirror the restored ApiUser into the mock-era `currentUser` global
     // so the profile tab shows real data instead of the AAROHI placeholder.
     installUserSync();

@@ -14,6 +14,10 @@ class ApiEventCard {
   final int priceMax;
   final int saves;
   final int popularityScore;
+  /// Nullable because older events may not have coords; the map filters
+  /// those out, the discovery feed renders them regardless.
+  final double? latitude;
+  final double? longitude;
 
   const ApiEventCard({
     required this.id,
@@ -28,6 +32,8 @@ class ApiEventCard {
     required this.priceMax,
     required this.saves,
     required this.popularityScore,
+    required this.latitude,
+    required this.longitude,
   });
 
   factory ApiEventCard.fromJson(Map<String, dynamic> json) => ApiEventCard(
@@ -43,6 +49,8 @@ class ApiEventCard {
         priceMax: json['priceMax'] as int? ?? 0,
         saves: json['saves'] as int? ?? 0,
         popularityScore: json['popularityScore'] as int? ?? 0,
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -58,6 +66,8 @@ class ApiEventCard {
         'priceMax': priceMax,
         'saves': saves,
         'popularityScore': popularityScore,
+        'latitude': latitude,
+        'longitude': longitude,
       };
 }
 

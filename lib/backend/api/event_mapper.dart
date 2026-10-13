@@ -29,6 +29,8 @@ class EventMapper {
       isTrending: c.popularityScore >= 100,
       isWeekend: _isWeekend(c.startAt),
       isNewlyAdded: DateTime.now().difference(c.startAt).inDays.abs() <= 7,
+      lat: c.latitude,
+      lng: c.longitude,
       priceRupees: c.priceMin == 0 ? null : priceR,
     );
   }

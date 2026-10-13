@@ -8,6 +8,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../core/di/injection_container.dart';
+import '../../core/geo/city_resolver.dart';
 import '../../core/models/models.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/components.dart';
@@ -47,14 +49,47 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  static const LatLng _raipur = LatLng(21.2514, 81.6296);
   final MapController _map = MapController();
   String? _selectedEventId;
+  // Resolved from GeoCityResolver on first build. India-wide fallback until
+  // we hear back, so the map always has something sane to center on even
+  // when the network is down.
+  MapViewHint _view = const MapViewHint(
+    slug: null,
+    center: LatLng(20.5937, 78.9629),
+    zoom: 5.0,
+  );
+  bool _viewResolved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveView();
+  }
+
+  Future<void> _resolveView() async {
+    final hint = await sl<GeoCityResolver>().resolveMapView();
+    if (!mounted) return;
+    setState(() {
+      _view = hint;
+      _viewResolved = true;
+    });
+    _map.move(hint.center, hint.zoom);
+  }
 
   @override
   void dispose() {
     _map.dispose();
     super.dispose();
+  }
+
+  /// Formats the title eyebrow: slug uppercased, or "NEAR YOU" once we've
+  /// resolved and are on the India fallback, or empty while resolving.
+  String _headerLabel() {
+    if (_view.slug != null) {
+      return _view.slug!.toUpperCase().replaceAll('-', ' ');
+    }
+    return _viewResolved ? 'NEAR YOU' : '';
   }
 
   void _onPinTap(Event e) {
@@ -81,7 +116,7 @@ class _MapScreenState extends State<MapScreen> {
         bottom: false,
         child: Column(
           children: [
-            const _Header(),
+            _Header(label: _headerLabel()),
             const _DiscoveryFilterBar(),
             SizedBox(height: 8.r),
             const _CategoryChipsBar(),
@@ -99,9 +134,9 @@ class _MapScreenState extends State<MapScreen> {
                       FlutterMap(
                         mapController: _map,
                         options: MapOptions(
-                          initialCenter: _raipur,
-                          initialZoom: 12,
-                          minZoom: 10,
+                          initialCenter: _view.center,
+                          initialZoom: _view.zoom,
+                          minZoom: _view.slug == null ? 4 : 10,
                           maxZoom: 18,
                           interactionOptions: const InteractionOptions(
                             flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
@@ -181,7 +216,8 @@ class _MapScreenState extends State<MapScreen> {
 // ---------------- Header + filter/category bars (shared visual with EventsScreen) ----------------
 
 class _Header extends StatelessWidget {
-  const _Header();
+  final String label;
+  const _Header({required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -197,7 +233,7 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'RAIPUR',
+                  label,
                   style: TextStyle(
                     fontFamily: 'GeneralSans',
                     fontWeight: FontWeight.w700,

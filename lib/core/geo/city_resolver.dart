@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../backend/api/cities_api.dart';
@@ -9,6 +10,16 @@ import '../../backend/models/city_models.dart';
 import '../../backend/services/auth_service.dart';
 import '../../backend/services/user_service.dart';
 import '../di/injection_container.dart';
+
+/// A map-view hint: where to center the FlutterMap and what label to show.
+/// `slug` is null only when every resolution path failed and we're painting
+/// an India-wide zoom so the UI never shows a lie.
+class MapViewHint {
+  final String? slug;
+  final LatLng center;
+  final double zoom;
+  const MapViewHint({required this.slug, required this.center, required this.zoom});
+}
 
 /// Resolves the user's nearest Hatri-live city from their device GPS and
 /// persists it on the backend profile.
@@ -74,6 +85,87 @@ class GeoCityResolver {
       debugPrint('GeoCityResolver failed: $e\n$s');
       return null;
     }
+  }
+
+  /// Picks what the map should initially center on and what to render as
+  /// its title. Resolution order:
+  ///   1. User's resolved city (currentUser.currentCitySlug) — look up its
+  ///      coords from the active-cities list.
+  ///   2. Live GPS resolve for users whose city hasn't been set yet.
+  ///   3. First active city with coords from the API.
+  ///   4. India geographic center at a country-wide zoom — only when every
+  ///      network and GPS path has failed. We render a plain "MAP" title so
+  ///      the UI never names a city it hasn't confirmed.
+  Future<MapViewHint> resolveMapView() async {
+    const indiaCenter = LatLng(20.5937, 78.9629);
+    const cityZoom = 12.0;
+    const indiaZoom = 5.0;
+
+    List<ApiCity>? cities;
+    try {
+      cities = await _api.listActive();
+    } catch (_) {
+      cities = null;
+    }
+
+    MapViewHint? pick(String slug) {
+      final match = cities?.firstWhere(
+        (c) => c.slug == slug && c.latitude != null && c.longitude != null,
+        orElse: () => const ApiCity(
+          slug: '',
+          name: '',
+          state: '',
+          active: false,
+          timezone: '',
+          latitude: null,
+          longitude: null,
+        ),
+      );
+      if (match == null || match.slug.isEmpty) return null;
+      return MapViewHint(
+        slug: match.slug,
+        center: LatLng(match.latitude!, match.longitude!),
+        zoom: cityZoom,
+      );
+    }
+
+    // 1 — user's saved city
+    final userSlug = sl<AuthService>().user?.currentCitySlug;
+    if (userSlug != null && userSlug.isNotEmpty) {
+      final hit = pick(userSlug);
+      if (hit != null) return hit;
+    }
+
+    // 2 — live resolve from GPS
+    final liveSlug = await resolveNearest();
+    if (liveSlug != null) {
+      final hit = pick(liveSlug);
+      if (hit != null) return hit;
+    }
+
+    // 3 — first active city with coords
+    final firstWithCoords = cities?.firstWhere(
+      (c) => c.latitude != null && c.longitude != null,
+      orElse: () => const ApiCity(
+        slug: '',
+        name: '',
+        state: '',
+        active: false,
+        timezone: '',
+        latitude: null,
+        longitude: null,
+      ),
+    );
+    if (firstWithCoords != null && firstWithCoords.slug.isNotEmpty) {
+      return MapViewHint(
+        slug: firstWithCoords.slug,
+        center: LatLng(firstWithCoords.latitude!, firstWithCoords.longitude!),
+        zoom: cityZoom,
+      );
+    }
+
+    // 4 — honest India-wide fallback
+    return const MapViewHint(slug: null, center: indiaCenter, zoom: indiaZoom);
   }
 
   /// Boot-time catch-up for users whose currentCitySlug is null. Runs
