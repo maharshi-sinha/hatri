@@ -25,8 +25,8 @@ plugins {
     // Gradle Plugin Transform API and breaks AGP 9.x builds. We're not using
     // Performance Monitoring yet; add it back if we start, pinned to a version
     // that supports current AGP.
-    id("com.google.gms.google-services") version("4.3.15") apply false
-    id("com.google.firebase.crashlytics") version("2.8.1") apply false
+    id("com.google.gms.google-services") version("4.4.2") apply false
+    id("com.google.firebase.crashlytics") version("3.0.2") apply false
     // END: FlutterFire Configuration
     id("org.jetbrains.kotlin.android") version "2.3.20" apply false
 }
