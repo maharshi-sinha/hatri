@@ -55,6 +55,18 @@ class UserService {
     }
   }
 
+  /// DELETE /api/v1/me. Schedules the account for hard deletion 7 days from
+  /// now. The user is signed out immediately. Signing back in with the same
+  /// phone within 7 days transparently cancels the pending deletion.
+  Future<void> deleteAccount() async {
+    try {
+      await _http.dio.delete<void>('/api/v1/me');
+      await _auth.signOut();
+    } on DioException catch (e) {
+      throw _http.translate(e);
+    }
+  }
+
   /// GET /api/v1/me. Useful after sign-in to refresh the cached user.
   Future<ApiUser> fetchMe() async {
     try {
