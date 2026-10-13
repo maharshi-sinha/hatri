@@ -50,6 +50,8 @@ class SettingsScreen extends StatelessWidget {
                     subtitle: 'what shows up on your feed',
                     onTap: () => _openInterestsEditor(context),
                   ),
+                  _SectionLabel(label: 'NOTIFICATIONS', accent: AppColors.fuchsia),
+                  const _NotificationToggles(),
                   _SectionLabel(label: 'LEGAL', accent: AppColors.lime),
                   _SettingsRow(
                     icon: Icons.privacy_tip_outlined,
@@ -730,6 +732,128 @@ class _WipeItem extends StatelessWidget {
                 color: AppColors.paper,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Notification toggles (three independent push slots) ──────────────────
+
+class _NotificationToggles extends StatefulWidget {
+  const _NotificationToggles();
+
+  @override
+  State<_NotificationToggles> createState() => _NotificationTogglesState();
+}
+
+class _NotificationTogglesState extends State<_NotificationToggles> {
+  @override
+  Widget build(BuildContext context) {
+    // Reads straight off AuthService.user so a server-side update (via
+    // updateCachedUser) rebuilds the switches without extra plumbing.
+    return ValueListenableBuilder<AuthState>(
+      valueListenable: sl<AuthService>().state,
+      builder: (context, authState, _) {
+        final u = authState.user;
+        return Column(
+          children: [
+            _ToggleRow(
+              title: 'Morning pings',
+              subtitle: 'soft morning check-ins. 09:00',
+              value: u?.pushMorning ?? true,
+              onChanged: (v) => _toggle('morning', v),
+            ),
+            _ToggleRow(
+              title: 'Evening pings',
+              subtitle: 'where tonight nudges. 18:00',
+              value: u?.pushEvening ?? true,
+              onChanged: (v) => _toggle('evening', v),
+            ),
+            _ToggleRow(
+              title: 'Event reminders',
+              subtitle: 'the day before, 3 hours out, 30 min to go',
+              value: u?.pushReminders ?? true,
+              onChanged: (v) => _toggle('reminders', v),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _toggle(String kind, bool value) async {
+    HapticFeedback.selectionClick();
+    try {
+      await sl<UserService>().updateProfile(
+        pushMorning: kind == 'morning' ? value : null,
+        pushEvening: kind == 'evening' ? value : null,
+        pushReminders: kind == 'reminders' ? value : null,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      HatriSnack.show(
+        context,
+        "couldn't save that. try again.",
+        vibe: SnackVibe.info,
+        emoji: '⚠️',
+      );
+    }
+  }
+}
+
+class _ToggleRow extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const _ToggleRow({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 6.r),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'GeneralSans',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14.sp,
+                    color: AppColors.paper,
+                  ),
+                ),
+                SizedBox(height: 2.r),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontFamily: 'GeneralSans',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12.sp,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.paper,
+            activeTrackColor: AppColors.fuchsia,
+            inactiveThumbColor: AppColors.muted,
+            inactiveTrackColor: AppColors.surfaceRaised,
           ),
         ],
       ),
