@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/models/models.dart';
+import '../../core/repositories/event_feed_page.dart';
 import '../api/event_mapper.dart';
 import '../api/events_api.dart';
 import '../models/event_models.dart';
@@ -25,30 +26,86 @@ class EventsService {
 
   EventsService({required EventsApi api}) : _api = api;
 
-  /// Fetch the discovery feed. Returns UI-ready [Event]s.
-  /// Throws only when both API and cache are empty — caller handles fallback.
+  /// Flat getter kept for legacy callers (home + this-week screens) that
+  /// don't paginate. Just unwraps the first page.
   Future<List<Event>> getFeed({
     String? citySlug,
     String? category,
     int limit = 40,
+  }) async {
+    final page = await getFeedPage(
+      citySlug: citySlug,
+      category: category,
+      limit: limit,
+    );
+    return page.events;
+  }
+
+  /// Paginated feed. Pass the previous page's `nextCursor` as `cursor` to
+  /// load the next page. First call: cursor=null.
+  ///
+  /// Caching: we only snapshot the FIRST page (cursor==null) so a cold
+  /// offline open still has something to render. Deeper pages aren't
+  /// cached since they're only visible after scrolling and aren't worth
+  /// the storage churn.
+  Future<EventFeedPage> getFeedPage({
+    String? citySlug,
+    String? category,
+    String? cursor,
+    int limit = 20,
   }) async {
     try {
       final feed = await _api.list(
         citySlug: citySlug,
         category: category,
         limit: limit,
+        cursor: cursor,
       );
-      // Cache the raw API response so we can rebuild the exact same list
-      // even if the domain-model shape changes between releases.
-      unawaited(_saveCache(feed));
-      return feed.items.map(EventMapper.fromCard).toList();
+      if (cursor == null) {
+        unawaited(_saveCache(feed));
+      }
+      return EventFeedPage(
+        events: feed.items.map(EventMapper.fromCard).toList(),
+        nextCursor: feed.nextCursor,
+      );
     } catch (e) {
-      debugPrint('EventsService.getFeed API failed: $e — trying cache');
-      final cached = await _loadCache();
-      if (cached != null && cached.items.isNotEmpty) {
-        return cached.items.map(EventMapper.fromCard).toList();
+      debugPrint('EventsService.getFeedPage API failed: $e');
+      // Only fall back to cache on the first page. For load-more, let the
+      // caller surface a retry affordance; we don't want to splice cached
+      // first-page items into a load-more response.
+      if (cursor == null) {
+        final cached = await _loadCache();
+        if (cached != null && cached.items.isNotEmpty) {
+          return EventFeedPage(
+            events: cached.items.map(EventMapper.fromCard).toList(),
+            nextCursor: cached.nextCursor,
+          );
+        }
       }
       rethrow;
+    }
+  }
+
+  /// Server-side search over the events discovery feed. Case-insensitive
+  /// match against title / venue / address. Returns an empty list on empty
+  /// query. No caching: search is live and specific per-keystroke.
+  Future<List<Event>> search({
+    required String query,
+    String? citySlug,
+    int limit = 30,
+  }) async {
+    final q = query.trim();
+    if (q.isEmpty) return const [];
+    try {
+      final feed = await _api.list(
+        citySlug: citySlug,
+        q: q,
+        limit: limit,
+      );
+      return feed.items.map(EventMapper.fromCard).toList();
+    } catch (e) {
+      debugPrint('EventsService.search failed: $e');
+      return const [];
     }
   }
 

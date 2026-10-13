@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../backend/services/events_service.dart';
-import '../models/models.dart';
+import 'event_feed_page.dart';
 import 'event_repository.dart';
 import 'mock_repository.dart';
 
@@ -24,19 +24,24 @@ class BackendEventRepository implements EventRepository {
         _fallback = fallback ?? MockEventRepository();
 
   @override
-  Future<List<Event>> getEvents() async {
+  Future<EventFeedPage> getEvents({String? cursor}) async {
     try {
-      final list = await _events.getFeed(citySlug: 'raipur');
-      if (list.isEmpty) {
-        // Server returned nothing (or all events already passed). Still
-        // give the user something to browse.
-        debugPrint('BackendEventRepository: empty feed, using mock');
+      final page = await _events.getFeedPage(citySlug: 'raipur', cursor: cursor);
+      if (cursor == null && page.events.isEmpty) {
+        // First page empty: server has literally nothing. Fall back to the
+        // mock so the user never sees an empty feed. For load-more pages
+        // we respect the empty result (reached the real end).
+        debugPrint('BackendEventRepository: empty first page, using mock');
         return await _fallback.getEvents();
       }
-      return list;
+      return page;
     } catch (e) {
       debugPrint('BackendEventRepository: fallback to mock ($e)');
-      return _fallback.getEvents();
+      // Only fall back on the FIRST page. For load-more, surface the error
+      // so the UI can show a retry affordance instead of silently stuffing
+      // mock events into the middle of real ones.
+      if (cursor == null) return _fallback.getEvents();
+      rethrow;
     }
   }
 }

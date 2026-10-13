@@ -1,4 +1,5 @@
 import '../models/models.dart';
+import 'event_feed_page.dart';
 import 'event_repository.dart';
 import 'community_repository.dart';
 import 'creator_repository.dart';
@@ -620,8 +621,16 @@ class MockRepository {
 }
 
 class MockEventRepository implements EventRepository {
+  // Mock backend. The fixture is small so we always return the whole set
+  // on the first page and signal "no more" via nextCursor=null — no need
+  // to simulate real cursor behaviour here.
   @override
-  Future<List<Event>> getEvents() async => MockRepository.mockEvents;
+  Future<EventFeedPage> getEvents({String? cursor}) async {
+    return EventFeedPage(
+      events: cursor == null ? MockRepository.mockEvents : const [],
+      nextCursor: null,
+    );
+  }
 }
 
 class MockCommunityRepository implements CommunityRepository {

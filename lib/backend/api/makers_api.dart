@@ -13,6 +13,7 @@ class MakersApi {
     String? citySlug,
     String? category,
     String? cursor,
+    String? q,
     int limit = 20,
   }) async {
     try {
@@ -23,6 +24,7 @@ class MakersApi {
           if (citySlug != null) 'citySlug': citySlug,
           if (category != null) 'category': category,
           if (cursor != null) 'cursor': cursor,
+          if (q != null && q.isNotEmpty) 'q': q,
         },
       );
       return ApiMakerFeed.fromJson(res.data!);

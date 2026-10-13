@@ -9,6 +9,10 @@ abstract class EventsEvent extends Equatable {
 
 class LoadEvents extends EventsEvent {}
 
+/// Append the next page of events to the current list. No-op if we're
+/// already fetching more or there's no `nextCursor` left.
+class LoadMoreEvents extends EventsEvent {}
+
 /// Set the active discovery filter (Tonight / Weekend / Free / Near Me / All).
 class SetDiscoveryFilter extends EventsEvent {
   final DiscoveryFilter filter;

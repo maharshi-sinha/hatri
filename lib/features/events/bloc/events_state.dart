@@ -16,23 +16,37 @@ class EventsLoaded extends EventsState {
   final List<Event> events;
   final DiscoveryFilter filter;
   final EventCategory? category;
+  /// Opaque cursor for the next page. Null means we've reached the end.
+  final String? nextCursor;
+  /// True while a LoadMoreEvents request is in flight. Used by the UI to
+  /// render a trailing shimmer / spinner.
+  final bool isLoadingMore;
 
   const EventsLoaded(
     this.events, {
     this.filter = DiscoveryFilter.all,
     this.category,
+    this.nextCursor,
+    this.isLoadingMore = false,
   });
+
+  bool get hasMore => nextCursor != null && nextCursor!.isNotEmpty;
 
   EventsLoaded copyWith({
     List<Event>? events,
     DiscoveryFilter? filter,
     EventCategory? category,
     bool clearCategory = false,
+    String? nextCursor,
+    bool clearCursor = false,
+    bool? isLoadingMore,
   }) {
     return EventsLoaded(
       events ?? this.events,
       filter: filter ?? this.filter,
       category: clearCategory ? null : (category ?? this.category),
+      nextCursor: clearCursor ? null : (nextCursor ?? this.nextCursor),
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
   }
 

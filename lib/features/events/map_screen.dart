@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -460,12 +461,12 @@ class _EventSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(Corners.md),
                   child: Stack(
                     children: [
-                      Image.network(
-                        event.coverUrl,
+                      HatriImage(
+                        url: event.coverUrl,
                         width: 92.r,
                         height: 92.r,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
+                        errorWidget:
                             Container(width: 92.r, height: 92.r, color: accent),
                       ),
                       Positioned.fill(

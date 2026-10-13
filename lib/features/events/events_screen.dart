@@ -17,8 +17,39 @@ import 'event_details_screen.dart';
 import 'map_screen.dart';
 import '../../core/responsive/responsive.dart';
 
-class EventsScreen extends StatelessWidget {
+class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
+
+  @override
+  State<EventsScreen> createState() => _EventsScreenState();
+}
+
+class _EventsScreenState extends State<EventsScreen> {
+  final ScrollController _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_onScroll);
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Fires LoadMoreEvents when the viewport is within ~500px of the bottom.
+  /// The bloc self-guards against duplicate calls (isLoadingMore / hasMore
+  /// checks), so this listener can be chatty without side effects.
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    final remaining = _scroll.position.maxScrollExtent - _scroll.position.pixels;
+    if (remaining < 500) {
+      context.read<EventsBloc>().add(LoadMoreEvents());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +58,7 @@ class EventsScreen extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(
+          controller: _scroll,
           slivers: [
             SliverToBoxAdapter(child: _Header()),
             const SliverToBoxAdapter(child: _DiscoveryFilterBar()),
@@ -40,10 +72,45 @@ class EventsScreen extends StatelessWidget {
             ),
             SliverToBoxAdapter(child: SizedBox(height: 10.r)),
             const _EventsSliverGrid(),
+            const _LoadMoreTrailer(),
             SliverToBoxAdapter(child: SizedBox(height: 100.r)),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Thin sliver that lives below the events grid. Shows a loading indicator
+/// while a new page is being fetched, or quietly disappears when the feed
+/// has reached its end.
+class _LoadMoreTrailer extends StatelessWidget {
+  const _LoadMoreTrailer();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<EventsBloc, EventsState>(
+      builder: (context, state) {
+        if (state is! EventsLoaded) return const SliverToBoxAdapter();
+        if (!state.hasMore && !state.isLoadingMore) {
+          return const SliverToBoxAdapter();
+        }
+        return SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 20.r),
+            child: const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: AppColors.fuchsia,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

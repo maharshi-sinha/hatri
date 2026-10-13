@@ -1,10 +1,9 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http_parser/http_parser.dart';
-import 'package:path_provider/path_provider.dart';
 
+import '../../core/images/image_compressor.dart';
 import '../models/event_models.dart';
 import 'http_client.dart';
 
@@ -19,6 +18,7 @@ class EventsApi {
     String? citySlug,
     String? category,
     String? cursor,
+    String? q,
     int limit = 20,
   }) async {
     try {
@@ -29,6 +29,7 @@ class EventsApi {
           if (citySlug != null) 'citySlug': citySlug,
           if (category != null) 'category': category,
           if (cursor != null) 'cursor': cursor,
+          if (q != null && q.isNotEmpty) 'q': q,
         },
       );
       return ApiEventFeed.fromJson(res.data!);
@@ -150,20 +151,15 @@ class EventsApi {
     return 'image/jpeg';
   }
 
-  /// iPhone cameras save HEIC/HEIF by default and browsers can't render them.
-  /// Transcode to JPEG at the edge so what we store is universally viewable.
+  /// Resize + compress event covers to <=500 KB JPEG at 1200 px on the
+  /// longest side. Also converts HEIC/HEIF for free since the compressor
+  /// always outputs JPEG.
   static Future<File> _normalizeForUpload(File file) async {
-    final lower = file.path.toLowerCase();
-    if (!lower.endsWith('.heic') && !lower.endsWith('.heif')) return file;
-    final tmp = await getTemporaryDirectory();
-    final target =
-        '${tmp.path}/cover_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final out = await FlutterImageCompress.compressAndGetFile(
-      file.absolute.path,
-      target,
-      quality: 86,
-      format: CompressFormat.jpeg,
+    return const ImageCompressor().compressForUpload(
+      file,
+      maxDimension: 1200,
+      maxBytes: 500 * 1024,
+      label: 'cover',
     );
-    return out == null ? file : File(out.path);
   }
 }
