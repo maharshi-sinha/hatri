@@ -9,7 +9,7 @@ import '../../shared/design/components.dart';
 import '../../shared/widgets/maker_card.dart';
 import '../../shared/widgets/search_screen.dart';
 import '../../shared/widgets/weekly_issue_card.dart';
-import '../makers/maker_profile_screen.dart';
+import '../makers/presentation/pages/maker_profile_screen.dart';
 import 'weekly_issue_screen.dart';
 
 const _cityName = 'RAIPUR';

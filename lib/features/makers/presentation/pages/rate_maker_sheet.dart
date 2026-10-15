@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../core/makers/reviews_store.dart';
-import '../../core/models/makers.dart';
-import '../../core/models/models.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
+import '../../../../core/makers/reviews_store.dart';
+import '../../../../core/models/makers.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// Bottom sheet for leaving a review. Big star row → text field → submit.
 /// Persists to [ReviewsStore] which the maker profile listens to.

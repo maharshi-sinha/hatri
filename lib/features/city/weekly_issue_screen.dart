@@ -8,7 +8,7 @@ import '../../core/models/makers.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/motifs.dart';
-import '../makers/maker_profile_screen.dart';
+import '../makers/presentation/pages/maker_profile_screen.dart';
 
 /// The Weekly Issue as a magazine. PageView with distinct spreads that flip
 /// left/right. Not a scroll. Each page has its own layout: cover → editor's

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/makers/reviews_store.dart';
-import '../../core/models/makers.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/auth_prompt/login_prompt_sheet.dart';
-import '../../shared/auth_prompt/require_auth.dart';
+import '../../../../core/makers/reviews_store.dart';
+import '../../../../core/models/makers.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/auth_prompt/login_prompt_sheet.dart';
+import '../../../../shared/auth_prompt/require_auth.dart';
 import 'rate_maker_sheet.dart';
 
 /// Public maker profile. Full-bleed portrait cover, meta strip, bio, tag row,
