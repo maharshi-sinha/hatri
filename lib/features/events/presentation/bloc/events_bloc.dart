@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/failures.dart';
@@ -22,8 +23,14 @@ class EventsBloc extends Bloc<EventsEvent, EventsState> {
   EventsBloc({required GetEvents getEvents})
       : _getEvents = getEvents,
         super(EventsInitial()) {
-    on<LoadEvents>(_onLoadEvents);
-    on<LoadMoreEvents>(_onLoadMoreEvents);
+    // Concurrency transformers (PR #13):
+    // - restartable(): a new LoadEvents cancels an in-flight one. Protects
+    //   the user from a double-tap on refresh racing with itself.
+    // - droppable(): LoadMoreEvents received while another load-more is
+    //   in flight is dropped. The in-state isLoadingMore flag used to be
+    //   the only guard; this makes it explicit at the registration site.
+    on<LoadEvents>(_onLoadEvents, transformer: restartable());
+    on<LoadMoreEvents>(_onLoadMoreEvents, transformer: droppable());
     on<SetDiscoveryFilter>(_onSetDiscoveryFilter);
     on<SetCategoryFilter>(_onSetCategoryFilter);
   }

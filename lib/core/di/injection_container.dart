@@ -77,7 +77,10 @@ void init() {
   // resolve dependencies lazily on get(), so registration order between
   // the bloc and its use case does not matter.
   sl.registerFactory(() => EventsBloc(getEvents: sl()));
-  sl.registerFactory(() => CommunitiesBloc(repository: sl()));
+  // CommunitiesBloc takes the GetCommunities use case (clean-arch).
+  // Registered by registerCommunitiesFeature(sl) further down; factory
+  // lookups are lazy so order does not matter.
+  sl.registerFactory(() => CommunitiesBloc(getCommunities: sl()));
 
   // ─── Repositories ───
   // Events: real backend, with tiered fallback (API → cache → mock).
