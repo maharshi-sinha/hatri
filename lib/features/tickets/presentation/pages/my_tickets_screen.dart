@@ -3,11 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/responsive/responsive.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/tickets/tickets_store.dart';
+import '../../../../core/usecases/no_params.dart';
 import '../../../events/presentation/pages/ticket_reveal_screen.dart';
+import '../../domain/usecases/get_my_tickets.dart';
 
 /// The user's ticket wallet. Segmented UPCOMING / PAST, live-reactive to
 /// [TicketsStore]. Tap a card to re-open the animated ticket (skipping the
@@ -24,11 +27,13 @@ enum _Tab { upcoming, past }
 class _MyTicketsScreenState extends State<MyTicketsScreen> {
   final _store = TicketsStore.instance;
   _Tab _tab = _Tab.upcoming;
+  bool _hydrating = false;
 
   @override
   void initState() {
     super.initState();
     _store.addListener(_onStore);
+    _hydrateFromBackend();
   }
 
   @override
@@ -41,7 +46,24 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     if (mounted) setState(() {});
   }
 
-  List<SavedTicket> get _visible => _tab == _Tab.upcoming ? _store.upcoming : _store.past;
+  /// Pulls the user's tickets from the backend and replaces the local
+  /// store contents. Covers the fresh-launch case where the store is
+  /// empty because this session hasn't issued an RSVP yet. Also runs
+  /// on every return to the screen so a ticket booked on another
+  /// device shows up.
+  Future<void> _hydrateFromBackend() async {
+    if (_hydrating) return;
+    setState(() => _hydrating = true);
+    final result = await sl<GetMyTickets>().call(const NoParams());
+    result.fold(
+      (_) {}, // Keep whatever is already in the store on failure.
+      (tickets) => _store.hydrateFromApi(tickets),
+    );
+    if (mounted) setState(() => _hydrating = false);
+  }
+
+  List<SavedTicket> get _visible =>
+      _tab == _Tab.upcoming ? _store.upcoming : _store.past;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +75,16 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
             _buildHeader(),
             _buildTabs(),
             Expanded(
-              child: _visible.isEmpty ? _buildEmpty() : _buildList(_visible),
+              child: _visible.isNotEmpty
+                  ? _buildList(_visible)
+                  : (_hydrating
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.lime,
+                          ),
+                        )
+                      : _buildEmpty()),
             ),
           ],
         ),

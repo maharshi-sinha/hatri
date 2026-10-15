@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'backend/services/auth_service.dart';
 import 'core/analytics/analytics_service.dart';
 import 'core/auth/user_sync.dart';
 import 'core/deeplinks/deeplink_handler.dart';
@@ -16,10 +17,13 @@ import 'core/di/injection_container.dart' as di;
 import 'core/responsive/responsive.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/tickets/tickets_store.dart';
+import 'core/usecases/no_params.dart';
 import 'features/communities/presentation/bloc/communities_bloc.dart';
 import 'features/communities/presentation/bloc/communities_event.dart';
 import 'features/events/presentation/bloc/events_bloc.dart';
 import 'features/events/presentation/bloc/events_event.dart';
+import 'features/tickets/domain/usecases/get_my_tickets.dart';
 import 'firebase_options.dart';
 import 'flavors.dart';
 import 'shared/widgets/connection_gate.dart';
@@ -91,6 +95,18 @@ void main() async {
     // Mirror the restored ApiUser into the mock-era `currentUser` global
     // so the profile tab shows real data instead of the AAROHI placeholder.
     installUserSync();
+    // Hydrate the local ticket wallet from backend if we're signed in.
+    // Without this, the Profile tab's "MY UPCOMING EVENTS" counter and
+    // the MyTicketsScreen stay empty on a fresh launch until the user
+    // visits each screen individually.
+    _hydrateTicketsIfSignedIn();
+    // Re-hydrate whenever auth state flips to signedIn (post-OTP) so a
+    // user who just signed in sees their past tickets right away.
+    di.sl<AuthService>().state.addListener(() {
+      if (di.sl<AuthService>().state.value.status == AuthStatus.signedIn) {
+        _hydrateTicketsIfSignedIn();
+      }
+    });
     // Fire-and-forget: analytics init shouldn't delay first paint.
     unawaited(di.sl<AnalyticsService>().init());
     // Catch-up for accounts created before the geo flow existed: silently
@@ -201,5 +217,23 @@ class _ResponsiveShell extends StatelessWidget {
       maxScaleFactor: 1.15,
       child: content,
     );
+  }
+}
+
+/// Fire-and-forget: if the user is signed in, pull their tickets from the
+/// backend and seed the local TicketsStore so the profile counter and the
+/// My Tickets wallet both reflect server truth from first paint, not just
+/// after they visit MyTicketsScreen individually. Silent on failure.
+void _hydrateTicketsIfSignedIn() {
+  try {
+    if (!di.sl<AuthService>().isSignedIn) return;
+    di.sl<GetMyTickets>().call(const NoParams()).then((result) {
+      result.fold(
+        (_) {}, // Silent: a startup hydration failure is not user-facing.
+        (tickets) => TicketsStore.instance.hydrateFromApi(tickets),
+      );
+    });
+  } catch (e) {
+    debugPrint('tickets hydration skipped: $e');
   }
 }
