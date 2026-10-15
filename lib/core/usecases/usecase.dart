@@ -16,6 +16,7 @@ import '../error/failures.dart';
 /// }
 /// ```
 abstract class UseCase<Return, Params> {
+  const UseCase();
   Future<Either<Failure, Return>> call(Params params);
 }
 
@@ -23,5 +24,6 @@ abstract class UseCase<Return, Params> {
 /// use case (e.g. phone-number formatting) so the bloc layer still routes
 /// through the domain.
 abstract class SyncUseCase<Return, Params> {
+  const SyncUseCase();
   Either<Failure, Return> call(Params params);
 }

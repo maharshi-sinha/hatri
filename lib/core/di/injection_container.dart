@@ -14,6 +14,7 @@ import '../../backend/services/tickets_service.dart';
 import '../../backend/services/user_service.dart';
 import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/events/bloc/events_bloc.dart';
+import '../../features/events/di.dart' as events_feature;
 import '../analytics/analytics_service.dart';
 import '../geo/city_resolver.dart';
 import '../notifications/notifications_service.dart';
@@ -76,6 +77,14 @@ void init() {
   // Communities + creators: still mock for now. Backend endpoints not built.
   sl.registerLazySingleton<CommunityRepository>(() => MockCommunityRepository());
   sl.registerLazySingleton<CreatorRepository>(() => MockCreatorRepository());
+
+  // ─── Clean-architecture feature modules ───
+  // Each module registers its own data + domain graph (datasources,
+  // repository impl, use cases). Registered AFTER the legacy bindings so
+  // nothing is overridden. The old EventRepository above keeps serving
+  // every existing call site; the new graph lives in parallel for later
+  // bloc swaps.
+  events_feature.registerEventsFeature(sl);
 }
 
 /// Loads persisted tokens and, if the access token expired, refreshes it.
