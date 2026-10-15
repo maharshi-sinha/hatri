@@ -170,17 +170,37 @@ intentionally not included (its current line pulls a matcher version
 that collides with flutter_test's). Bloc tests can be written against
 the plain Stream when needed.
 
+## Entity barrels
+
+Every feature has `features/<feature>/domain/entities/` with barrels
+that re-export the current physical classes from `core/models/` and
+`backend/models/`. Call sites can import from the clean-arch path
+today; when `core/models/models.dart` is finally split per feature,
+the classes move INTO the barrel files and the re-exports become
+unnecessary, with no change at the call sites.
+
 ## What is not done
 
-- bloc_test (matcher conflict in current line).
-- `app/` top folder with HatriApp widget extracted from main.dart.
-- Domain entities still physically live under `core/models/` and
-  `core/repositories/event_feed_page.dart`. Later PR moves them under
-  `features/<feature>/domain/entities/`.
-- 50+ screens still use setState with direct service calls. Need
-  Cubits/Blocs.
+- bloc_test (matcher conflict in the current line).
+- `app/` top folder with HatriApp extracted from main.dart. The file
+  is still short enough to live under lib/main.dart; the extraction
+  is cosmetic and will land when main.dart grows.
+- Physical split of `core/models/models.dart` and
+  `core/repositories/event_feed_page.dart`. The classes stay there
+  until a dedicated split-models PR takes the ~100 call sites with
+  it in one atomic rewrite. Barrels in each feature's domain/entities/
+  insulate consumers.
 - Freezed codegen is wired in pubspec but no file uses it yet. First
   consumer should run `dart run build_runner build --delete-conflicting-outputs`.
+- ~40 setState screens still read `sl<XService>()` directly. The
+  clean-arch repositories + use cases are registered and ready; each
+  screen's rewrite into a Cubit + BlocBuilder is behavior-touching
+  work. Rough budget 40 to 60 hours. The pattern is already proven
+  on EventsBloc and CommunitiesBloc.
+- Deletion of `lib/backend/` and `lib/core/repositories/`. Needs the
+  setState screens migrated first, then service inlining into
+  datasources, then the delete sweep. See the ordered deletion plan
+  above.
 
 ## Branches shipped
 
@@ -201,5 +221,7 @@ arch/12-small-batch-2          saved, plans, support presentation
 arch/13-bloc-polish            bloc_concurrency + CommunitiesBloc
                                clean-arch migration
 arch/14-test-scaffolding       test tree + 3 example suites
-arch/15-architecture-doc       this file
+arch/15-architecture-doc       this file (initial)
+arch/16-entities-and-cubits    domain entity barrels per feature +
+                               doc update
 ```
