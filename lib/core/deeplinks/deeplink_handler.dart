@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../backend/services/events_service.dart';
-import '../../features/events/event_details_screen.dart';
+import '../../features/events/presentation/pages/event_details_screen.dart';
 import '../analytics/analytics_service.dart';
 import '../di/injection_container.dart';
 

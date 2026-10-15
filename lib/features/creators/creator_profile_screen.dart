@@ -12,7 +12,7 @@ import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
 import '../../shared/widgets/shimmer_skeletons.dart';
 import '../../shared/widgets/small_event_card.dart';
-import '../events/event_details_screen.dart';
+import '../events/presentation/pages/event_details_screen.dart';
 import '../../core/responsive/responsive.dart';
 
 /// Public creator / organizer profile — the marketplace seed.

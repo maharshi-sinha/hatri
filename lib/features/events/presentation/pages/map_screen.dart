@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -9,17 +9,17 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../core/di/injection_container.dart';
-import '../../core/geo/city_resolver.dart';
-import '../../core/models/models.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/components.dart';
-import '../../shared/design/motifs.dart';
-import 'bloc/events_bloc.dart';
-import 'bloc/events_event.dart';
-import 'bloc/events_state.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/geo/city_resolver.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/components.dart';
+import '../../../../shared/design/motifs.dart';
+import '../bloc/events_bloc.dart';
+import '../bloc/events_event.dart';
+import '../bloc/events_state.dart';
 import 'event_details_screen.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../core/responsive/responsive.dart';
 
 /// Full-screen event map, styled to Hatri. Reuses EventsBloc filters so list
 /// view and map view share one mental model.

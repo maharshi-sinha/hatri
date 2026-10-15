@@ -6,19 +6,19 @@ import 'package:lottie/lottie.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../backend/models/ticket_models.dart';
-import '../../core/notifications/notifications_store.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/models/models.dart';
-import '../../core/tickets/tickets_store.dart';
-import '../../shared/design/motifs.dart';
+import '../../../../backend/models/ticket_models.dart';
+import '../../../../core/notifications/notifications_store.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/tickets/tickets_store.dart';
+import '../../../../shared/design/motifs.dart';
 import 'ticket_invoice.dart';
 import 'dart:ui' as ui;
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/rendering.dart';
 import 'dart:math' as math;
-import '../../core/responsive/responsive.dart';
+import '../../../../core/responsive/responsive.dart';
 
 /// Renders the printing ticket. Optional [tier] shows tier name + price on the
 /// ticket when the event is paid.

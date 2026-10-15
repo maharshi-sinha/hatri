@@ -13,7 +13,7 @@ import '../../backend/services/msg91_widget_service.dart';
 import '../../backend/services/tickets_service.dart';
 import '../../backend/services/user_service.dart';
 import '../../features/communities/bloc/communities_bloc.dart';
-import '../../features/events/bloc/events_bloc.dart';
+import '../../features/events/presentation/bloc/events_bloc.dart';
 import '../../features/events/di.dart' as events_feature;
 import '../analytics/analytics_service.dart';
 import '../geo/city_resolver.dart';

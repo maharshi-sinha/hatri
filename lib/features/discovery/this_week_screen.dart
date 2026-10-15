@@ -13,10 +13,10 @@ import '../../shared/design/motifs.dart';
 import '../../shared/widgets/shimmer_skeletons.dart';
 import '../../shared/widgets/small_event_card.dart';
 import '../creators/creator_profile_screen.dart';
-import '../events/bloc/events_bloc.dart';
-import '../events/bloc/events_state.dart';
-import '../events/event_details_screen.dart';
-import '../events/host_event_screen.dart';
+import '../events/presentation/bloc/events_bloc.dart';
+import '../events/presentation/bloc/events_state.dart';
+import '../events/presentation/pages/event_details_screen.dart';
+import '../events/presentation/pages/host_event_screen.dart';
 import '../../core/responsive/responsive.dart';
 
 /// This Week in Hatri — the weekly haat drop, editorial digest style.

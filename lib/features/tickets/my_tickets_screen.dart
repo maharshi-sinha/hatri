@@ -7,7 +7,7 @@ import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/tickets/tickets_store.dart';
-import '../events/ticket_reveal_screen.dart';
+import '../events/presentation/pages/ticket_reveal_screen.dart';
 
 /// The user's ticket wallet. Segmented UPCOMING / PAST, live-reactive to
 /// [TicketsStore]. Tap a card to re-open the animated ticket (skipping the

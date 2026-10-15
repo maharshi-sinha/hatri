@@ -9,7 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../backend/api/http_client.dart';
 import '../../backend/services/auth_service.dart';
 import '../../backend/services/events_service.dart';
-import '../../features/events/event_details_screen.dart';
+import '../../features/events/presentation/pages/event_details_screen.dart';
 import '../analytics/analytics_service.dart';
 import '../di/injection_container.dart';
 import '../routing/app_router.dart';

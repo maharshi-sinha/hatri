@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../shared/widgets/main_scaffold.dart';
 import '../../features/home/home_screen.dart';
-import '../../features/events/events_screen.dart';
+import '../../features/events/presentation/pages/events_screen.dart';
 import '../../features/communities/communities_screen.dart';
 import '../../features/city/city_screen.dart';
 import '../../features/profile/profile_screen.dart';

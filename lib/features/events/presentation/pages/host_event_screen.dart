@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -11,21 +11,21 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../backend/api/api_exception.dart';
-import '../../backend/services/events_service.dart';
-import '../../core/analytics/analytics_service.dart';
-import '../../core/di/injection_container.dart';
-import '../../core/models/models.dart';
-import '../../core/repositories/creator_repository.dart';
-import '../../core/repositories/mock_repository.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/components.dart';
-import '../../shared/design/hatri_snack.dart';
-import '../../shared/design/motifs.dart';
-import '../../shared/widgets/event_card.dart';
-import 'bloc/events_bloc.dart';
-import 'bloc/events_event.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../backend/api/api_exception.dart';
+import '../../../../backend/services/events_service.dart';
+import '../../../../core/analytics/analytics_service.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/repositories/creator_repository.dart';
+import '../../../../core/repositories/mock_repository.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/components.dart';
+import '../../../../shared/design/hatri_snack.dart';
+import '../../../../shared/design/motifs.dart';
+import '../../../../shared/widgets/event_card.dart';
+import '../bloc/events_bloc.dart';
+import '../bloc/events_event.dart';
+import '../../../../core/responsive/responsive.dart';
 import 'event_details_screen.dart';
 
 /// Single-page fast form for posting an event.

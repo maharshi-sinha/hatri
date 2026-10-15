@@ -11,7 +11,7 @@ import '../../core/repositories/creator_repository.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/design/motifs.dart';
-import '../events/event_details_screen.dart';
+import '../events/presentation/pages/event_details_screen.dart';
 import '../creators/creator_profile_screen.dart';
 import 'photo_wall_screen.dart';
 import 'photo_viewer_screen.dart';

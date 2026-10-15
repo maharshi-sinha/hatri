@@ -1,33 +1,33 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../backend/api/api_exception.dart';
-import '../../backend/models/ticket_models.dart';
-import '../../backend/services/events_service.dart';
-import '../../backend/services/tickets_service.dart';
-import '../../core/analytics/analytics_service.dart';
-import '../../core/di/injection_container.dart';
-import '../../core/models/models.dart';
-import '../../core/repositories/creator_repository.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/auth_prompt/login_prompt_sheet.dart';
-import '../../shared/auth_prompt/require_auth.dart';
-import '../../shared/design/hatri_snack.dart';
-import '../../shared/design/components.dart';
-import '../../shared/design/motifs.dart';
-import '../creators/creator_profile_screen.dart';
-import '../plans/start_plan_screen.dart';
-import '../../core/saved/saved_events_store.dart';
+import '../../../../backend/api/api_exception.dart';
+import '../../../../backend/models/ticket_models.dart';
+import '../../../../backend/services/events_service.dart';
+import '../../../../backend/services/tickets_service.dart';
+import '../../../../core/analytics/analytics_service.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/repositories/creator_repository.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/auth_prompt/login_prompt_sheet.dart';
+import '../../../../shared/auth_prompt/require_auth.dart';
+import '../../../../shared/design/hatri_snack.dart';
+import '../../../../shared/design/components.dart';
+import '../../../../shared/design/motifs.dart';
+import '../../../creators/creator_profile_screen.dart';
+import '../../../plans/start_plan_screen.dart';
+import '../../../../core/saved/saved_events_store.dart';
 import 'ticket_reveal_screen.dart';
-import 'ticket_tier_sheet.dart';
-import '../../core/responsive/responsive.dart';
+import '../widgets/ticket_tier_sheet.dart';
+import '../../../../core/responsive/responsive.dart';
 
 /// Event details — rebuilt in the new brutalist visual language.
 /// Adds: who's-going faces, lineup display, share sheet.

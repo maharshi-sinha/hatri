@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../core/models/models.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// A tier + quantity selection captured by the tier sheet.
 class TicketOrder {

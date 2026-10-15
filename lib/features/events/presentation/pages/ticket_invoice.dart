@@ -6,7 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
-import '../../core/models/models.dart';
+import '../../../../core/models/models.dart';
 
 /// Generates a branded PDF invoice for a paid Hatri ticket and hands it to the
 /// device's share sheet. Prototype uses a mock 5% convenience fee + 18% GST.

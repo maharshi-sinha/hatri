@@ -24,9 +24,9 @@ import '../../shared/widgets/ticker_widget.dart';
 import '../../shared/widgets/notifications_screen.dart';
 import '../../shared/widgets/search_screen.dart';
 import '../discovery/this_week_screen.dart';
-import '../events/event_details_screen.dart';
-import '../events/bloc/events_bloc.dart';
-import '../events/bloc/events_state.dart';
+import '../events/presentation/pages/event_details_screen.dart';
+import '../events/presentation/bloc/events_bloc.dart';
+import '../events/presentation/bloc/events_state.dart';
 import '../makers/maker_profile_screen.dart';
 import '../../core/responsive/responsive.dart';
 

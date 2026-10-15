@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/error/failures.dart';
-import '../domain/repositories/event_repository.dart';
-import '../domain/usecases/get_events.dart';
+import '../../../../core/error/failures.dart';
+import '../../domain/repositories/event_repository.dart';
+import '../../domain/usecases/get_events.dart';
 import 'events_event.dart';
 import 'events_state.dart';
 
