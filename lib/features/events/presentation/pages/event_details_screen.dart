@@ -23,7 +23,7 @@ import '../../../../shared/design/hatri_snack.dart';
 import '../../../../shared/design/components.dart';
 import '../../../../shared/design/motifs.dart';
 import '../../../creators/presentation/pages/creator_profile_screen.dart';
-import '../../../plans/start_plan_screen.dart';
+import '../../../plans/presentation/pages/start_plan_screen.dart';
 import '../../../../core/saved/saved_events_store.dart';
 import 'ticket_reveal_screen.dart';
 import '../widgets/ticket_tier_sheet.dart';

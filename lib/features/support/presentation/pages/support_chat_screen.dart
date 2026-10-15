@@ -4,11 +4,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../../backend/services/auth_service.dart';
-import '../../core/di/injection_container.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/hatri_snack.dart';
+import '../../../../backend/services/auth_service.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/hatri_snack.dart';
 
 /// Crisp chat support — a lightweight webview wrapper around our embedded
 /// Crisp chatbox. The admin side is the Crisp mobile app (free tier gives

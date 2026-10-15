@@ -3,14 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../core/models/models.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/community_card.dart';
-import '../../shared/widgets/shimmer_skeletons.dart';
-import '../communities/presentation/bloc/communities_bloc.dart';
-import '../communities/presentation/bloc/communities_state.dart';
-import '../communities/presentation/pages/community_details_screen.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/community_card.dart';
+import '../../../../shared/widgets/shimmer_skeletons.dart';
+import '../../../communities/presentation/bloc/communities_bloc.dart';
+import '../../../communities/presentation/bloc/communities_state.dart';
+import '../../../communities/presentation/pages/community_details_screen.dart';
 
 /// Scenes the user has joined — reads AppCommunities.joinedIds.
 class MyCommunitiesScreen extends StatefulWidget {

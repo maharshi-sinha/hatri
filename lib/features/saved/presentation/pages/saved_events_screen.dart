@@ -3,15 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../core/models/models.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/saved/saved_events_store.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/shimmer_skeletons.dart';
-import '../../shared/widgets/small_event_card.dart';
-import '../events/presentation/bloc/events_bloc.dart';
-import '../events/presentation/bloc/events_state.dart';
-import '../events/presentation/pages/event_details_screen.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/saved/saved_events_store.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/shimmer_skeletons.dart';
+import '../../../../shared/widgets/small_event_card.dart';
+import '../../../events/presentation/bloc/events_bloc.dart';
+import '../../../events/presentation/bloc/events_state.dart';
+import '../../../events/presentation/pages/event_details_screen.dart';
 
 /// Bookmarked events — reads all events from EventsBloc + filters by saved IDs.
 class SavedEventsScreen extends StatefulWidget {

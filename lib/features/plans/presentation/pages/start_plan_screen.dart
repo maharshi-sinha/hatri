@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../core/models/models.dart';
-import '../../core/repositories/mock_repository.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/components.dart';
-import '../../shared/design/motifs.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/repositories/mock_repository.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/components.dart';
+import '../../../../shared/design/motifs.dart';
+import '../../../../core/responsive/responsive.dart';
 
 /// Start-a-plan flow: pick friends, add a note, send invites.
 /// Persists to AppPlans.mine in-memory for the session.
