@@ -5,15 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../backend/api/api_exception.dart';
-import '../../backend/services/avatar_upload_service.dart';
-import '../../backend/services/user_service.dart';
-import '../../core/di/injection_container.dart';
-import '../../core/models/models.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/hatri_snack.dart';
-import '../../shared/widgets/social_brand_badge.dart';
+import '../../../../backend/api/api_exception.dart';
+import '../../../../backend/services/avatar_upload_service.dart';
+import '../../../../backend/services/user_service.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/hatri_snack.dart';
+import '../../../../shared/widgets/social_brand_badge.dart';
 import 'verify_email_screen.dart';
 
 /// Edit the user's name, bio + avatar. Writes back to the [currentUser]

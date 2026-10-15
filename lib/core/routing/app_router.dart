@@ -6,7 +6,7 @@ import '../../features/home/home_screen.dart';
 import '../../features/events/presentation/pages/events_screen.dart';
 import '../../features/communities/communities_screen.dart';
 import '../../features/city/city_screen.dart';
-import '../../features/profile/profile_screen.dart';
+import '../../features/profile/presentation/pages/profile_screen.dart';
 import '../../features/auth/presentation/pages/splash_screen.dart';
 import '../../features/auth/presentation/pages/auth_screen.dart';
 import '../../features/auth/presentation/pages/sign_in_screen.dart';

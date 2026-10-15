@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../core/theme/app_theme.dart';
-import '../events/presentation/pages/host_event_screen.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../events/presentation/pages/host_event_screen.dart';
+import '../../../../core/responsive/responsive.dart';
 
 class OrganizerDashboardScreen extends StatelessWidget {
   const OrganizerDashboardScreen({super.key});

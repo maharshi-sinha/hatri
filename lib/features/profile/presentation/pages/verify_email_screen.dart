@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// 6-digit email OTP entry. Mock verification for the prototype: any 6 digits
 /// entered → success and pops with `true`. Wired into edit-profile so users

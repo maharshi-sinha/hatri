@@ -17,6 +17,7 @@ import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/events/presentation/bloc/events_bloc.dart';
 import '../../features/events/di.dart' as events_feature;
 import '../../features/makers/di.dart' as makers_feature;
+import '../../features/profile/di.dart' as profile_feature;
 import '../../features/tickets/di.dart' as tickets_feature;
 import '../analytics/analytics_service.dart';
 import '../geo/city_resolver.dart';
@@ -95,6 +96,7 @@ void init() {
   auth_feature.registerAuthFeature(sl);
   tickets_feature.registerTicketsFeature(sl);
   makers_feature.registerMakersFeature(sl);
+  profile_feature.registerProfileFeature(sl);
 }
 
 /// Loads persisted tokens and, if the access token expired, refreshes it.

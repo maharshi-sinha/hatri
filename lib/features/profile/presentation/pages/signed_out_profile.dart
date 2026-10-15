@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// Profile tab when nobody's signed in. Replaces the "AAROHI SHARMA" mock
 /// that used to leak through when currentUser was empty — a privacy-ish bug
