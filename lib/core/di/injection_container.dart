@@ -16,6 +16,7 @@ import '../../features/auth/di.dart' as auth_feature;
 import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/events/presentation/bloc/events_bloc.dart';
 import '../../features/events/di.dart' as events_feature;
+import '../../features/tickets/di.dart' as tickets_feature;
 import '../analytics/analytics_service.dart';
 import '../geo/city_resolver.dart';
 import '../notifications/notifications_service.dart';
@@ -91,6 +92,7 @@ void init() {
   // bloc swaps.
   events_feature.registerEventsFeature(sl);
   auth_feature.registerAuthFeature(sl);
+  tickets_feature.registerTicketsFeature(sl);
 }
 
 /// Loads persisted tokens and, if the access token expired, refreshes it.

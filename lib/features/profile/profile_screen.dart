@@ -15,7 +15,7 @@ import '../../core/saved/saved_events_store.dart';
 import '../auth/presentation/pages/interest_selection_screen.dart';
 import '../saved/my_communities_screen.dart';
 import '../saved/saved_events_screen.dart';
-import '../tickets/my_tickets_screen.dart';
+import '../tickets/presentation/pages/my_tickets_screen.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 import 'signed_out_profile.dart';
