@@ -12,7 +12,7 @@ import '../../shared/design/components.dart';
 import '../../shared/design/motifs.dart';
 import '../../shared/widgets/shimmer_skeletons.dart';
 import '../../shared/widgets/small_event_card.dart';
-import '../creators/creator_profile_screen.dart';
+import '../creators/presentation/pages/creator_profile_screen.dart';
 import '../events/presentation/bloc/events_bloc.dart';
 import '../events/presentation/bloc/events_state.dart';
 import '../events/presentation/pages/event_details_screen.dart';

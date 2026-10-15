@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../core/di/injection_container.dart';
-import '../../core/models/models.dart';
-import '../../core/repositories/event_repository.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/components.dart';
-import '../../shared/design/motifs.dart';
-import '../../shared/widgets/shimmer_skeletons.dart';
-import '../../shared/widgets/small_event_card.dart';
-import '../events/presentation/pages/event_details_screen.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/repositories/event_repository.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/components.dart';
+import '../../../../shared/design/motifs.dart';
+import '../../../../shared/widgets/shimmer_skeletons.dart';
+import '../../../../shared/widgets/small_event_card.dart';
+import '../../../events/presentation/pages/event_details_screen.dart';
+import '../../../../core/responsive/responsive.dart';
 
 /// Public creator / organizer profile — the marketplace seed.
 /// Shows bio + stats + upcoming/past events. Follow toggles in-memory (real

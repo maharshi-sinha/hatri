@@ -15,6 +15,7 @@ import '../../backend/services/user_service.dart';
 import '../../features/auth/di.dart' as auth_feature;
 import '../../features/communities/di.dart' as communities_feature;
 import '../../features/communities/presentation/bloc/communities_bloc.dart';
+import '../../features/creators/di.dart' as creators_feature;
 import '../../features/events/presentation/bloc/events_bloc.dart';
 import '../../features/events/di.dart' as events_feature;
 import '../../features/makers/di.dart' as makers_feature;
@@ -99,6 +100,7 @@ void init() {
   makers_feature.registerMakersFeature(sl);
   profile_feature.registerProfileFeature(sl);
   communities_feature.registerCommunitiesFeature(sl);
+  creators_feature.registerCreatorsFeature(sl);
 }
 
 /// Loads persisted tokens and, if the access token expired, refreshes it.

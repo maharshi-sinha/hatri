@@ -22,7 +22,7 @@ import '../../../../shared/auth_prompt/require_auth.dart';
 import '../../../../shared/design/hatri_snack.dart';
 import '../../../../shared/design/components.dart';
 import '../../../../shared/design/motifs.dart';
-import '../../../creators/creator_profile_screen.dart';
+import '../../../creators/presentation/pages/creator_profile_screen.dart';
 import '../../../plans/start_plan_screen.dart';
 import '../../../../core/saved/saved_events_store.dart';
 import 'ticket_reveal_screen.dart';
