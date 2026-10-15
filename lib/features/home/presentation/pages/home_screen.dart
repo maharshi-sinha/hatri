@@ -23,11 +23,13 @@ import '../../../../shared/widgets/stacked_hero_carousel.dart';
 import '../../../../shared/widgets/ticker_widget.dart';
 import '../../../../shared/widgets/notifications_screen.dart';
 import '../../../../shared/widgets/search_screen.dart';
+import '../../../../backend/models/marquee_models.dart';
 import '../../../discovery/presentation/pages/this_week_screen.dart';
 import '../../../events/presentation/pages/event_details_screen.dart';
 import '../../../events/presentation/bloc/events_bloc.dart';
 import '../../../events/presentation/bloc/events_state.dart';
 import '../../../makers/presentation/pages/maker_profile_screen.dart';
+import '../../../marquee/domain/usecases/get_marquee.dart';
 import '../../../../core/responsive/responsive.dart';
 
 // Session-scoped flag: the soft login nudge fires at most once per app launch.
@@ -42,19 +44,64 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with WidgetsBindingObserver {
   Timer? _nudgeTimer;
+
+  /// Live marquee strings pulled from the backend. Null while the first
+  /// fetch is in flight; empty list means the fetch returned nothing;
+  /// non-empty means use these in place of the hardcoded fallback.
+  List<String>? _liveMarquee;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scheduleLoginNudge();
+    _fetchMarquee();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nudgeTimer?.cancel();
     super.dispose();
+  }
+
+  /// Refresh the ticker whenever the app returns from the background.
+  /// Covers the common pattern: Hatri team pushes a new promo item, the
+  /// user swipes back to Hatri from Instagram, the ticker updates.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _fetchMarquee();
+    }
+  }
+
+  Future<void> _fetchMarquee() async {
+    final city = currentUser.currentCitySlug;
+    final result = await sl<GetMarquee>().call(city.isEmpty ? null : city);
+    if (!mounted) return;
+    result.fold(
+      (_) {}, // On failure, keep whatever the UI already had (fallback or last fetch).
+      (items) {
+        final rendered = _renderWithSeparators(items);
+        setState(() => _liveMarquee = rendered);
+      },
+    );
+  }
+
+  /// Convert a list of backend items into the TickerWidget's string list,
+  /// interleaving the ' · ' separator between every pair. Dropping the
+  /// trailing separator keeps the loop seam from double-dotting.
+  List<String> _renderWithSeparators(List<ApiMarqueeItem> items) {
+    if (items.isEmpty) return const [];
+    final out = <String>[];
+    for (var i = 0; i < items.length; i++) {
+      out.add(items[i].display);
+      if (i < items.length - 1) out.add('·');
+    }
+    return out;
   }
 
   void _scheduleLoginNudge() {
@@ -79,7 +126,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const tickerTexts = [
+    // Hardcoded editorial fallback. Used until the backend's first fetch
+    // returns, and whenever the backend returns an empty list (fresh
+    // city with no curated items yet). Matches the strings seeded in
+    // hatri-backend/prisma/seed.ts, so the first launch looks identical
+    // to the pre-marquee-feature app.
+    const fallbackTicker = [
       "🔥 THIS WEEK IN HATRI:",
       "ECLECTIKA 2026",
       "·",
@@ -92,6 +144,10 @@ class _HomeScreenState extends State<HomeScreen> {
       "PHOTO WALK · PURANI BASTI",
       "·",
     ];
+    final tickerTexts =
+        (_liveMarquee != null && _liveMarquee!.isNotEmpty)
+            ? _liveMarquee!
+            : fallbackTicker;
 
     final headerH = 34.r;
     return Scaffold(
@@ -104,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: PullReveal(
                 headerHeight: headerH,
-                header: const TickerWidget(texts: tickerTexts),
+                header: TickerWidget(texts: tickerTexts),
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
