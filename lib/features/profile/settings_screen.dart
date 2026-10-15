@@ -10,7 +10,7 @@ import '../../backend/services/user_service.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
-import '../../features/auth/interest_selection_screen.dart';
+import '../../features/auth/presentation/pages/interest_selection_screen.dart';
 import '../../features/support/support_chat_screen.dart';
 import '../../shared/design/hatri_snack.dart';
 import '../../shared/design/motifs.dart';

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/motifs.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/motifs.dart';
 
 /// 3-slide welcome carousel — full-screen color blocks with big emoji hero,
 /// punchy copy, playful Gen-Z microcopy. Sets the "digital haat" tone.

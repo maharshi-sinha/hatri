@@ -12,6 +12,7 @@ import '../../backend/services/events_service.dart';
 import '../../backend/services/msg91_widget_service.dart';
 import '../../backend/services/tickets_service.dart';
 import '../../backend/services/user_service.dart';
+import '../../features/auth/di.dart' as auth_feature;
 import '../../features/communities/bloc/communities_bloc.dart';
 import '../../features/events/presentation/bloc/events_bloc.dart';
 import '../../features/events/di.dart' as events_feature;
@@ -89,6 +90,7 @@ void init() {
   // every existing call site; the new graph lives in parallel for later
   // bloc swaps.
   events_feature.registerEventsFeature(sl);
+  auth_feature.registerAuthFeature(sl);
 }
 
 /// Loads persisted tokens and, if the access token expired, refreshes it.

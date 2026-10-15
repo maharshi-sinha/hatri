@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../backend/services/avatar_upload_service.dart';
-import '../../backend/services/user_service.dart';
-import '../../core/di/injection_container.dart';
-import '../../core/models/models.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/motifs.dart';
+import '../../../../backend/services/avatar_upload_service.dart';
+import '../../../../backend/services/user_service.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/motifs.dart';
 
 /// Celebration — full-bleed lime, oversized type as hero, minimal ornament.
 /// "You made it. No fluff."

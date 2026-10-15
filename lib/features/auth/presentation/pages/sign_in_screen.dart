@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/models/models.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/responsive/responsive.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});

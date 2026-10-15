@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
-import '../../core/theme/app_theme.dart';
-import '../../core/models/models.dart';
-import '../../shared/widgets/blinking_dot.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/models/models.dart';
+import '../../../../shared/widgets/blinking_dot.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../core/responsive/responsive.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});

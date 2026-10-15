@@ -5,14 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../backend/api/api_exception.dart';
-import '../../backend/services/auth_service.dart';
-import '../../backend/services/msg91_widget_service.dart';
-import '../../core/analytics/analytics_service.dart';
-import '../../core/di/injection_container.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/hatri_snack.dart';
+import '../../../../backend/api/api_exception.dart';
+import '../../../../backend/services/auth_service.dart';
+import '../../../../backend/services/msg91_widget_service.dart';
+import '../../../../core/analytics/analytics_service.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/hatri_snack.dart';
 
 /// OTP verification — responsive 6-box grid, keyboard-safe pinned CTA,
 /// tap-outside-to-dismiss.

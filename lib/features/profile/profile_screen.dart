@@ -12,7 +12,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/tickets/tickets_store.dart';
 import '../../shared/design/motifs.dart';
 import '../../core/saved/saved_events_store.dart';
-import '../auth/interest_selection_screen.dart';
+import '../auth/presentation/pages/interest_selection_screen.dart';
 import '../saved/my_communities_screen.dart';
 import '../saved/saved_events_screen.dart';
 import '../tickets/my_tickets_screen.dart';

@@ -5,9 +5,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/models/models.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// Onboarding step 04 — birthday + gender. Gen Z framed as a "vibe check".
 class VibesScreen extends StatefulWidget {

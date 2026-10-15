@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/models/models.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// Name entry — sits between OTP and Interests.
 class NameEntryScreen extends StatefulWidget {

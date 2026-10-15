@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../backend/api/api_exception.dart';
-import '../../backend/services/msg91_widget_service.dart';
-import '../../core/analytics/analytics_service.dart';
-import '../../core/di/injection_container.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/hatri_snack.dart';
+import '../../../../backend/api/api_exception.dart';
+import '../../../../backend/services/msg91_widget_service.dart';
+import '../../../../core/analytics/analytics_service.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/hatri_snack.dart';
 
 /// Phone number entry — India-only (+91) for the prototype.
 class PhoneEntryScreen extends StatefulWidget {

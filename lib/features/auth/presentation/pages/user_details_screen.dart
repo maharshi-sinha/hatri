@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../core/models/models.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/responsive/responsive.dart';
 
 class UserDetailsScreen extends StatefulWidget {
   const UserDetailsScreen({super.key});

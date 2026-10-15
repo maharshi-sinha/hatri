@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../backend/services/auth_service.dart';
-import '../../core/di/injection_container.dart';
-import '../../core/theme/app_theme.dart';
+import '../../../../backend/services/auth_service.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// Splash — plays an intro video with sound, no controls, then routes
 /// to home if the user is signed in or /welcome otherwise. Auth state is

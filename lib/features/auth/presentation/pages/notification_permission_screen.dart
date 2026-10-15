@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,58 +6,40 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../core/di/injection_container.dart';
-import '../../core/geo/city_resolver.dart';
-import '../../core/models/models.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/motifs.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/motifs.dart';
 
-/// Location permission — full indigo background, bobbing pin, punchy copy.
-class LocationPermissionScreen extends StatefulWidget {
-  const LocationPermissionScreen({super.key});
+/// Notification permission — full lime background, wiggling bell, punchy copy.
+class NotificationPermissionScreen extends StatefulWidget {
+  const NotificationPermissionScreen({super.key});
 
   @override
-  State<LocationPermissionScreen> createState() =>
-      _LocationPermissionScreenState();
+  State<NotificationPermissionScreen> createState() =>
+      _NotificationPermissionScreenState();
 }
 
-class _LocationPermissionScreenState extends State<LocationPermissionScreen>
+class _NotificationPermissionScreenState
+    extends State<NotificationPermissionScreen>
     with SingleTickerProviderStateMixin {
   bool _busy = false;
   bool _needsSettings = false;
   bool _confirmed = false;
-  bool _checking = true;
-  late final AnimationController _bob;
+  bool _checking = false;
+  late final AnimationController _wiggle;
 
   @override
   void initState() {
     super.initState();
-    _bob = AnimationController(
+    _wiggle = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _skipIfGranted());
-  }
-
-  Future<void> _skipIfGranted() async {
-    final status = await Permission.locationWhenInUse.status;
-    if (!mounted) return;
-    if (status.isGranted) {
-      context.pushReplacement('/phone');
-    } else {
-      setState(() => _checking = false);
-    }
-  }
-
-  void _skipForNow() {
-    HapticFeedback.selectionClick();
-    context.go('/phone');
   }
 
   @override
   void dispose() {
-    _bob.dispose();
+    _wiggle.dispose();
     super.dispose();
   }
 
@@ -67,7 +49,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
 
     if (_needsSettings) {
       await openAppSettings();
-      final after = await Permission.locationWhenInUse.status;
+      final after = await Permission.notification.status;
       if (!mounted) return;
       setState(() {
         _busy = false;
@@ -77,7 +59,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
       return;
     }
 
-    final result = await Permission.locationWhenInUse.request();
+    final result = await Permission.notification.request();
     if (!mounted) return;
     setState(() {
       _busy = false;
@@ -89,31 +71,26 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
 
   Future<void> _celebrateAndAdvance() async {
     HapticFeedback.mediumImpact();
-    _bob.stop();
+    _wiggle.stop();
     setState(() => _confirmed = true);
-    // Fire-and-forget: resolve nearest active Hatri city from device GPS
-    // and stash it on currentUser so the celebration screen PATCHes it to
-    // the backend along with the rest of the profile. If this fails
-    // (airplane mode, GPS off), we just move on without a city — the
-    // signed-in boot path will try again later.
-    unawaited(_stashNearestCity());
     await Future<void>.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
-    context.go('/phone');
+    context.go('/location-permission');
   }
 
-  Future<void> _stashNearestCity() async {
-    final slug = await sl<GeoCityResolver>().resolveNearest();
-    if (slug == null) return;
-    currentUser.homeCitySlug = slug;
-    currentUser.currentCitySlug = slug;
+  void _skipForNow() {
+    HapticFeedback.selectionClick();
+    context.go('/location-permission');
   }
+
 
   @override
   Widget build(BuildContext context) {
-    const bg = AppColors.indigo;
-    const onBg = AppColors.paper;
+    const bg = AppColors.lime;
+    const onBg = AppColors.onNeon;
 
+    // While permissions are being checked, paint only the bg color so a skip
+    // looks like a smooth colour hold rather than a flash of full UI.
     if (_checking) return const Scaffold(backgroundColor: bg);
 
     return Scaffold(
@@ -124,17 +101,17 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
             // Corner starbursts
             Positioned(
               top: 24.r,
-              left: 24.r,
-              child: Starburst(size: 42.r, color: AppColors.lime, points: 8),
+              right: 24.r,
+              child: Starburst(size: 42.r, color: AppColors.fuchsia, points: 8),
             ),
             Positioned(
               top: 90.r,
-              left: 66.r,
-              child: Starburst(size: 22.r, color: AppColors.fuchsia, points: 6),
+              right: 66.r,
+              child: Starburst(size: 22.r, color: AppColors.indigo, points: 6),
             ),
             Positioned(
-              bottom: 200.r,
-              right: 24.r,
+              bottom: 180.r,
+              left: 20.r,
               child: Starburst(
                   size: 30.r,
                   color: onBg.withValues(alpha: 0.25),
@@ -160,25 +137,23 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Pin block — bobs until confirmed, then flips to a
-                        // paper-white block with a checkmark and a scale bump.
+                        // Bell block — wiggles until confirmed, then flips to
+                        // a paper-white block with a checkmark and a scale bump.
                         AnimatedBuilder(
-                          animation: _bob,
+                          animation: _wiggle,
                           builder: (context, child) {
                             if (_confirmed) return child!;
                             final t =
-                                Curves.easeInOut.transform(_bob.value);
-                            return Transform.translate(
-                              offset: Offset(0, -8.0 * t),
-                              child: child,
-                            );
+                                Curves.easeInOut.transform(_wiggle.value);
+                            final angle = math.sin(t * math.pi * 2) * 0.14;
+                            return Transform.rotate(angle: angle, child: child);
                           },
                           child: AnimatedScale(
                             duration: const Duration(milliseconds: 320),
                             curve: Curves.easeOutBack,
                             scale: _confirmed ? 1.08 : 1.0,
                             child: StickerShadow(
-                              color: AppColors.fuchsia,
+                              color: AppColors.indigo,
                               offset: const Offset(6, 6),
                               radius: Corners.xl,
                               child: AnimatedContainer(
@@ -187,7 +162,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                                 width: 140.r,
                                 height: 140.r,
                                 decoration: BoxDecoration(
-                                  color: _confirmed ? AppColors.paper : AppColors.lime,
+                                  color: _confirmed ? AppColors.paper : AppColors.fuchsia,
                                   borderRadius: BorderRadius.circular(Corners.xl),
                                   border: Border.all(color: AppColors.onNeon, width: 1.6),
                                 ),
@@ -206,12 +181,12 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                                             color: AppColors.onNeon,
                                           )
                                         : SvgPicture.asset(
-                                            'assets/icons/Location.svg',
-                                            key: const ValueKey('pin'),
+                                            'assets/icons/Notification.svg',
+                                            key: const ValueKey('bell'),
                                             width: 66.r,
                                             height: 66.r,
                                             colorFilter: const ColorFilter.mode(
-                                                AppColors.onNeon, BlendMode.srcIn),
+                                                AppColors.paper, BlendMode.srcIn),
                                           ),
                                   ),
                                 ),
@@ -221,7 +196,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                         ),
                         SizedBox(height: 40.r),
                         Text(
-                          "WHAT'S\nNEAR YOU",
+                          'STAY IN\nTHE LOOP',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'ClashDisplay',
@@ -236,7 +211,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 32.r),
                           child: Text(
-                            'Events, cafés, and meetups happening right around your neighborhood.',
+                            'Weekly drops, RSVP reminders, creator alerts. Never miss the moment.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: 'GeneralSans',
@@ -260,10 +235,10 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                         child: ElevatedButton(
                           onPressed: _busy ? null : _requestOrOpenSettings,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.lime,
-                            foregroundColor: AppColors.onNeon,
+                            backgroundColor: onBg,
+                            foregroundColor: bg,
                             disabledBackgroundColor:
-                                AppColors.lime.withValues(alpha: 0.5),
+                                onBg.withValues(alpha: 0.5),
                             padding: EdgeInsets.symmetric(vertical: 18.r),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(Corners.md),
@@ -277,7 +252,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                                     ? 'REQUESTING...'
                                     : _needsSettings
                                         ? 'OPEN SETTINGS'
-                                        : 'ALLOW LOCATION',
+                                        : 'TURN ON NOTIFICATIONS',
                             style: TextStyle(
                               fontFamily: 'GeneralSans',
                               fontWeight: FontWeight.w800,
