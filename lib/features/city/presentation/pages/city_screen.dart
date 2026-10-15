@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../core/models/makers.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/components.dart';
-import '../../shared/widgets/maker_card.dart';
-import '../../shared/widgets/search_screen.dart';
-import '../../shared/widgets/weekly_issue_card.dart';
-import '../makers/presentation/pages/maker_profile_screen.dart';
+import '../../../../core/models/makers.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/components.dart';
+import '../../../../shared/widgets/maker_card.dart';
+import '../../../../shared/widgets/search_screen.dart';
+import '../../../../shared/widgets/weekly_issue_card.dart';
+import '../../../makers/presentation/pages/maker_profile_screen.dart';
 import 'weekly_issue_screen.dart';
 
 const _cityName = 'RAIPUR';

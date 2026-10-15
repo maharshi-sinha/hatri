@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/di/injection_container.dart';
-import '../../core/models/models.dart';
-import '../../core/repositories/creator_repository.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/components.dart';
-import '../../shared/design/motifs.dart';
-import '../../shared/widgets/shimmer_skeletons.dart';
-import '../../shared/widgets/small_event_card.dart';
-import '../creators/presentation/pages/creator_profile_screen.dart';
-import '../events/presentation/bloc/events_bloc.dart';
-import '../events/presentation/bloc/events_state.dart';
-import '../events/presentation/pages/event_details_screen.dart';
-import '../events/presentation/pages/host_event_screen.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/repositories/creator_repository.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/components.dart';
+import '../../../../shared/design/motifs.dart';
+import '../../../../shared/widgets/shimmer_skeletons.dart';
+import '../../../../shared/widgets/small_event_card.dart';
+import '../../../creators/presentation/pages/creator_profile_screen.dart';
+import '../../../events/presentation/bloc/events_bloc.dart';
+import '../../../events/presentation/bloc/events_state.dart';
+import '../../../events/presentation/pages/event_details_screen.dart';
+import '../../../events/presentation/pages/host_event_screen.dart';
+import '../../../../core/responsive/responsive.dart';
 
 /// This Week in Hatri — the weekly haat drop, editorial digest style.
 /// Trains a weekly habit that matches the app's cultural namesake.

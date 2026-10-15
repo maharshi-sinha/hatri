@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../core/models/makers.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/motifs.dart';
-import '../makers/presentation/pages/maker_profile_screen.dart';
+import '../../../../core/models/makers.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/motifs.dart';
+import '../../../makers/presentation/pages/maker_profile_screen.dart';
 
 /// The Weekly Issue as a magazine. PageView with distinct spreads that flip
 /// left/right. Not a scroll. Each page has its own layout: cover → editor's

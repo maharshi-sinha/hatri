@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../shared/widgets/main_scaffold.dart';
-import '../../features/home/home_screen.dart';
+import '../../features/home/presentation/pages/home_screen.dart';
 import '../../features/events/presentation/pages/events_screen.dart';
 import '../../features/communities/presentation/pages/communities_screen.dart';
-import '../../features/city/city_screen.dart';
+import '../../features/city/presentation/pages/city_screen.dart';
 import '../../features/profile/presentation/pages/profile_screen.dart';
 import '../../features/auth/presentation/pages/splash_screen.dart';
 import '../../features/auth/presentation/pages/auth_screen.dart';
