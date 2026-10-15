@@ -1,26 +1,26 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../core/models/models.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/components.dart';
-import '../../shared/design/motifs.dart';
-import '../../shared/widgets/burst_star.dart';
-import '../../shared/widgets/community_card.dart';
-import '../../shared/widgets/kinetic_marquee.dart';
-import '../../shared/widgets/shimmer_skeletons.dart';
-import '../../shared/widgets/search_screen.dart';
-import 'bloc/communities_bloc.dart';
-import 'bloc/communities_state.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/components.dart';
+import '../../../../shared/design/motifs.dart';
+import '../../../../shared/widgets/burst_star.dart';
+import '../../../../shared/widgets/community_card.dart';
+import '../../../../shared/widgets/kinetic_marquee.dart';
+import '../../../../shared/widgets/shimmer_skeletons.dart';
+import '../../../../shared/widgets/search_screen.dart';
+import '../bloc/communities_bloc.dart';
+import '../bloc/communities_state.dart';
 import 'community_details_screen.dart';
 import 'capture_vibe_screen.dart';
 import 'photo_viewer_screen.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../core/responsive/responsive.dart';
 
 /// Communities — meetup-first. Groups are crews that gather:
 /// neighborhoods, colleges, interests, and creator hubs.

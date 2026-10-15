@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../core/models/models.dart';
-import '../../core/reports/reports_store.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/report_sheet.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/reports/reports_store.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/report_sheet.dart';
 
 /// Full-screen swipeable photo viewer for the Memory Wall.
 /// Horizontal swipe changes photo. Progress bar at top, editorial caption

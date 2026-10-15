@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../shared/widgets/hatri_image.dart';
+import '../../../../shared/widgets/hatri_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/di/injection_container.dart';
-import '../../core/models/models.dart';
-import '../../core/repositories/event_repository.dart';
-import '../../core/repositories/creator_repository.dart';
-import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/design/motifs.dart';
-import '../events/presentation/pages/event_details_screen.dart';
-import '../creators/creator_profile_screen.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/repositories/event_repository.dart';
+import '../../../../core/repositories/creator_repository.dart';
+import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/design/motifs.dart';
+import '../../../events/presentation/pages/event_details_screen.dart';
+import '../../../creators/creator_profile_screen.dart';
 import 'photo_wall_screen.dart';
 import 'photo_viewer_screen.dart';
 

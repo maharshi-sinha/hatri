@@ -13,7 +13,8 @@ import '../../backend/services/msg91_widget_service.dart';
 import '../../backend/services/tickets_service.dart';
 import '../../backend/services/user_service.dart';
 import '../../features/auth/di.dart' as auth_feature;
-import '../../features/communities/bloc/communities_bloc.dart';
+import '../../features/communities/di.dart' as communities_feature;
+import '../../features/communities/presentation/bloc/communities_bloc.dart';
 import '../../features/events/presentation/bloc/events_bloc.dart';
 import '../../features/events/di.dart' as events_feature;
 import '../../features/makers/di.dart' as makers_feature;
@@ -97,6 +98,7 @@ void init() {
   tickets_feature.registerTicketsFeature(sl);
   makers_feature.registerMakersFeature(sl);
   profile_feature.registerProfileFeature(sl);
+  communities_feature.registerCommunitiesFeature(sl);
 }
 
 /// Loads persisted tokens and, if the access token expired, refreshes it.

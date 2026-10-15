@@ -12,9 +12,9 @@ import '../../core/di/injection_container.dart';
 import '../../core/models/models.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_theme.dart';
-import '../../features/communities/bloc/communities_bloc.dart';
-import '../../features/communities/bloc/communities_state.dart';
-import '../../features/communities/community_details_screen.dart';
+import '../../features/communities/presentation/bloc/communities_bloc.dart';
+import '../../features/communities/presentation/bloc/communities_state.dart';
+import '../../features/communities/presentation/pages/community_details_screen.dart';
 import '../../features/events/presentation/pages/event_details_screen.dart';
 
 /// Search across events (API) + scenes (local, since no backend endpoint

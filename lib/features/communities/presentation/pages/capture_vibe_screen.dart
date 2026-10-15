@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/responsive/responsive.dart';
 
 class CaptureVibeScreen extends StatefulWidget {
   const CaptureVibeScreen({super.key});

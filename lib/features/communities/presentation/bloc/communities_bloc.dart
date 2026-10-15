@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/repositories/community_repository.dart';
+import '../../../../core/repositories/community_repository.dart';
 import 'communities_event.dart';
 import 'communities_state.dart';
 
