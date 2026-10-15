@@ -98,8 +98,21 @@ dependencies:
   # MSG91 official Flutter SDK for mobile OTP (SMS without DLT).
   sendotp_flutter_sdk: ^0.0.2
 
-  # Crisp chat support widget — embedded via webview inside SupportChatScreen.
+  # Crisp chat support widget, embedded via webview inside SupportChatScreen.
   webview_flutter: ^4.10.0
+
+  # ─── Clean-architecture foundation ───
+  # Either<Failure, T> + Option<T>. Repository contracts return Either so the
+  # UI deals with typed failures instead of raw exceptions.
+  fpdart: ^1.1.0
+  # Event transformers for Bloc (debounce / droppable / restartable). Replaces
+  # hand-rolled request-sequence counters in screens like SearchScreen.
+  # Pinned to the 0.2.x line that still targets bloc ^8.x, matching our
+  # flutter_bloc 8.1.5. The 0.3.x line requires bloc 9.
+  bloc_concurrency: ^0.2.5
+  # Codegen annotations consumed by the generated *.freezed.dart / *.g.dart.
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
 
 dev_dependencies:
   flutter_test:
@@ -116,6 +129,20 @@ dev_dependencies:
 
   # ─── Dev-only ───
   pretty_dio_logger: ^1.4.0
+
+  # ─── Codegen for clean-architecture layer ───
+  # Freezed produces immutable value classes + sealed unions for states/events.
+  # json_serializable produces fromJson/toJson for DTOs.
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+
+  # ─── Testing: bloc + repository tests ───
+  mocktail: ^1.0.4
+  # bloc_test is intentionally omitted: the current 9.1.x line pulls a `test`
+  # version whose matcher constraint collides with flutter_test's bundled
+  # matcher 0.12.20. We can revisit once bloc_test releases a compatible line.
+  # Bloc tests can still be written with mocktail + a plain Stream listener.
 
 # NOTE: the themed (monochrome) Android layer is maintained by hand —
 # flutter_launcher_icons 0.13.1 has no `adaptive_icon_monochrome` key and
