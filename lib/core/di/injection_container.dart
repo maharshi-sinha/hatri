@@ -66,7 +66,11 @@ void init() {
   );
 
   // ─── Blocs ───
-  sl.registerFactory(() => EventsBloc(repository: sl()));
+  // EventsBloc now takes the GetEvents use case (clean-arch). The use case
+  // itself is registered by registerEventsFeature(sl) below. Factories
+  // resolve dependencies lazily on get(), so registration order between
+  // the bloc and its use case does not matter.
+  sl.registerFactory(() => EventsBloc(getEvents: sl()));
   sl.registerFactory(() => CommunitiesBloc(repository: sl()));
 
   // ─── Repositories ───
